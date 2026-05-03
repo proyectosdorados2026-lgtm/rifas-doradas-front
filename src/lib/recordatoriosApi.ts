@@ -13,6 +13,7 @@ export interface ClienteRecordatorio {
   boletas_pagadas: number
   boletas_reservadas: number
   boletas_abonadas: number
+  boletas_crucero: number
   deuda_total: number
   total_notificaciones: number
   ultima_notificacion: string | null
@@ -35,6 +36,7 @@ export interface ResumenRecordatorios {
   total_pendientes: number
   con_reservadas: number
   con_abonadas: number
+  con_crucero: number
   notificados: number
   no_notificados: number
 }
@@ -72,7 +74,7 @@ class RecordatoriosApiService {
     page: number = 1,
     limit: number = 20,
     search: string = '',
-    filtro: 'todos' | 'reservadas' | 'abonadas' = 'todos',
+    filtro: 'todos' | 'reservadas' | 'abonadas' | 'crucero' = 'todos',
     notificado: 'todos' | 'si' | 'no' = 'todos',
     vendedor: string = ''
   ): Promise<RecordatorioListResponse> {

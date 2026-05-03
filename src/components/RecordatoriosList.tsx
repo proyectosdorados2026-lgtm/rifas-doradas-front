@@ -47,24 +47,36 @@ function formatDateShort(dateString: string) {
 /**
  * Genera el URL de WhatsApp con un mensaje bonito personalizado
  */
-async function generarMensajeWhatsApp(cliente: ClienteRecordatorio): Promise<string | null> {
+async function generarMensajeWhatsApp(
+  cliente: ClienteRecordatorio,
+  tipo: 'todos' | 'reservadas' | 'abonadas' | 'crucero' = 'todos'
+): Promise<string | null> {
   const telCompleto = normalizarTelefono(cliente.telefono)
   if (!telCompleto || telCompleto.length < 7) return null
 
   const nombre = cliente.nombre || 'Cliente'
+  const esCrucero = tipo === 'crucero'
 
   try {
     const response = await clienteApi.getClienteDetalle(cliente.id)
     const { rifas, resumen } = response.data
 
     let msg = `🔔 *¡Hola ${nombre}!* 🎉\n\n`
-    msg += `Le escribimos de *Inversiones Castaño* para recordarle sobre sus boletas pendientes.\n\n`
-    msg += `🎯 *¡No se quede por fuera del  anticipado este sabado 2 de Mayo por 10 millones de pesos !*\n`
-    msg += `Para participar en este anticipado cada boleta debe de estar cancelada por lo menos con $60.000 pesos.\n\n`
+    if (esCrucero) {
+      msg += `Le escribimos de *Inversiones Castaño* con una *oportunidad especial* para usted. 🚢✨\n\n`
+      msg += `🎁 *¡Participe por un CRUCERO!* Para entrar al sorteo del crucero, cada boleta debe tener un abono mínimo de *$90.000*.\n\n`
+      msg += `Estas son las boletas suyas que aún no califican (abono menor a $90.000):\n\n`
+    } else {
+      msg += `Le escribimos de *Inversiones Castaño* para recordarle sobre sus boletas pendientes.\n\n`
+      msg += `🎯 *¡No se quede por fuera del  anticipado este sabado 2 de Mayo por 10 millones de pesos !*\n`
+      msg += `Para participar en este anticipado cada boleta debe de estar cancelada por lo menos con $60.000 pesos.\n\n`
+    }
 
     // Detalle por rifa
     rifas.forEach((rifa: RifaConBoletas) => {
-      const boletasPendientes = rifa.boletas.filter(b => b.estado === 'RESERVADA' || b.estado === 'ABONADA')
+      const boletasPendientes = esCrucero
+        ? rifa.boletas.filter(b => (b.estado === 'RESERVADA' || b.estado === 'ABONADA') && Number(b.abono) < 90000)
+        : rifa.boletas.filter(b => b.estado === 'RESERVADA' || b.estado === 'ABONADA')
       if (boletasPendientes.length === 0) return
 
       msg += `🎟️ *${rifa.rifa_nombre}*\n`
@@ -73,7 +85,11 @@ async function generarMensajeWhatsApp(cliente: ClienteRecordatorio): Promise<str
         if (b.estado === 'RESERVADA') {
           msg += `  ${getEstadoEmoji(b.estado)} Boleta *${num}* — Reservada (pendiente: ${formatCurrency(Number(b.saldo))})\n`
         } else {
-          msg += `  ${getEstadoEmoji(b.estado)} Boleta *${num}* — Abonado: ${formatCurrency(Number(b.abono))} de ${formatCurrency(Number(b.precio_unitario))} (falta: ${formatCurrency(Number(b.saldo))})\n`
+          const faltaCrucero = Math.max(90000 - Number(b.abono), 0)
+          const detalleExtra = esCrucero && faltaCrucero > 0
+            ? ` — 🚢 Falta ${formatCurrency(faltaCrucero)} para entrar al crucero`
+            : ''
+          msg += `  ${getEstadoEmoji(b.estado)} Boleta *${num}* — Abonado: ${formatCurrency(Number(b.abono))} de ${formatCurrency(Number(b.precio_unitario))} (falta: ${formatCurrency(Number(b.saldo))})${detalleExtra}\n`
         }
       })
       msg += `\n`
@@ -86,18 +102,27 @@ async function generarMensajeWhatsApp(cliente: ClienteRecordatorio): Promise<str
 
     msg += `🏦 ${getMediosDePagoTexto()}\n\n`
     msg += `📲 *Revisa tus boletas aquí:*\nhttps://elgrancamion.com/boletas\n\n`
-    msg += `¡Gracias por su confianza! 🙏✨`
+    msg += esCrucero
+      ? `¡Complete su abono y únase al sueño del crucero! 🚢🌊✨`
+      : `¡Gracias por su confianza! 🙏✨`
 
     return `https://wa.me/${telCompleto}?text=${encodeURIComponent(msg)}`
   } catch {
     // Fallback si falla la API
     const deuda = cliente.deuda_total || 0
     let msg = `🔔 *¡Hola ${nombre}!* 🎉\n\n`
-    msg += `Le recordamos que tiene boletas pendientes por pagar.\n\n`
+    if (esCrucero) {
+      msg += `🚢 *¡Oportunidad especial!* Para participar por el *CRUCERO* cada boleta debe estar abonada con al menos *$90.000*.\n\n`
+      msg += `Tiene boletas que aún no califican. Compáltelas y asegúrese su cupo. 🌊✨\n\n`
+    } else {
+      msg += `Le recordamos que tiene boletas pendientes por pagar.\n\n`
+    }
     if (deuda > 0) msg += `💰 *Total pendiente: ${formatCurrency(deuda)}*\n\n`
     msg += `🏦 ${getMediosDePagoTexto()}\n\n`
     msg += `📲 *Revisa tus boletas aquí:*\nhttps://elgrancamion.com/boletas\n\n`
-    msg += `¡Complete su pago para participar en los sorteos anticipados! 🙏✨`
+    msg += esCrucero
+      ? `¡Complete su abono y únase al sueño del crucero! 🚢🌊✨`
+      : `¡Complete su pago para participar en los sorteos anticipados! 🙏✨`
     return `https://wa.me/${telCompleto}?text=${encodeURIComponent(msg)}`
   }
 }
@@ -123,7 +148,7 @@ export default function RecordatoriosList() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 })
   const [searchTerm, setSearchTerm] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [filtroActivo, setFiltroActivo] = useState<'todos' | 'reservadas' | 'abonadas'>('todos')
+  const [filtroActivo, setFiltroActivo] = useState<'todos' | 'reservadas' | 'abonadas' | 'crucero'>('todos')
   const [filtroNotificado, setFiltroNotificado] = useState<'todos' | 'si' | 'no'>('todos')
   const [filtroVendedor, setFiltroVendedor] = useState<string>(loggedUser.vendedorId)
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
@@ -167,7 +192,7 @@ export default function RecordatoriosList() {
   const handleEnviarRecordatorio = async (cliente: ClienteRecordatorio) => {
     setCargandoRecordatorio(cliente.id)
     try {
-      const url = await generarMensajeWhatsApp(cliente)
+      const url = await generarMensajeWhatsApp(cliente, filtroActivo)
       if (url) {
         window.open(url, '_blank')
         // Registrar la notificación
@@ -206,6 +231,7 @@ export default function RecordatoriosList() {
     { key: 'todos' as const, label: 'Todos Pendientes', count: resumen?.total_pendientes ?? 0, color: 'bg-slate-900', textColor: 'text-white' },
     { key: 'reservadas' as const, label: 'Con Reservadas', count: resumen?.con_reservadas ?? 0, color: 'bg-yellow-500', textColor: 'text-white' },
     { key: 'abonadas' as const, label: 'Con Abonadas', count: resumen?.con_abonadas ?? 0, color: 'bg-blue-600', textColor: 'text-white' },
+    { key: 'crucero' as const, label: '🚢 Crucero (< $90k)', count: resumen?.con_crucero ?? 0, color: 'bg-cyan-600', textColor: 'text-white' },
   ]
 
   const notifFilters = [
@@ -257,7 +283,7 @@ export default function RecordatoriosList() {
       )}
 
       {/* Filter Cards - Tipo de boleta */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {filters.map((f) => (
           <button
             key={f.key}
