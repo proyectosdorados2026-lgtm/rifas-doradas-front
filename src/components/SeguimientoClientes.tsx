@@ -102,6 +102,7 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
 }) {
   const [expandida, setExpandida]       = useState(false)
   const [registrando, setRegistrando]   = useState(false)
+  const [numeroCopiado, setNumeroCopiado] = useState(false)
   const [contactos, setContactos]       = useState({
     total:  cliente.total_contactos  ?? 0,
     ultimo: cliente.ultimo_contacto  ?? null as string | null,
@@ -124,6 +125,7 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
 
   const telNorm = normalizarTelefono(cliente.telefono)
   const waUrl = telNorm ? `https://wa.me/${telNorm}` : null
+  const telefonoParaCopiar = (cliente.telefono || '').trim()
 
   const handleContactar = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -139,6 +141,26 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
       // silencioso — no rompe la UI
     } finally {
       setRegistrando(false)
+    }
+  }
+
+  const handleCopiarNumero = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    if (!telefonoParaCopiar) return
+
+    try {
+      await navigator.clipboard.writeText(telefonoParaCopiar)
+      setNumeroCopiado(true)
+      window.setTimeout(() => setNumeroCopiado(false), 1800)
+    } catch {
+      const input = document.createElement('input')
+      input.value = telefonoParaCopiar
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      setNumeroCopiado(true)
+      window.setTimeout(() => setNumeroCopiado(false), 1800)
     }
   }
 
@@ -172,6 +194,19 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
                 </svg>
                 WhatsApp
               </a>
+            )}
+            {telefonoParaCopiar && (
+              <button
+                type="button"
+                onClick={handleCopiarNumero}
+                className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md border transition-colors ${
+                  numeroCopiado
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {numeroCopiado ? 'Copiado' : 'Copiar #'}
+              </button>
             )}
           </div>
           {/* Números de boletas */}
