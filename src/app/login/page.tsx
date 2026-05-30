@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { API_BASE_URL } from '@/config/api'
 
@@ -28,6 +28,18 @@ interface LoginResponse {
   }>
 }
 
+const ROL_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Administrador',
+  ADMIN: 'Administrador',
+  VENDEDOR: 'Vendedor',
+}
+
+const ROL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  SUPER_ADMIN: { bg: 'from-purple-700 to-indigo-900', border: 'border-purple-400', text: 'text-purple-100', badge: 'bg-purple-500/30 text-purple-100 border-purple-400' },
+  ADMIN:       { bg: 'from-indigo-700 to-slate-900',  border: 'border-indigo-400',  text: 'text-indigo-100',  badge: 'bg-indigo-500/30 text-indigo-100 border-indigo-400'  },
+  VENDEDOR:    { bg: 'from-emerald-700 to-teal-900',  border: 'border-emerald-400', text: 'text-emerald-100', badge: 'bg-emerald-500/30 text-emerald-100 border-emerald-400' },
+}
+
 export default function LoginPage() {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -35,7 +47,19 @@ export default function LoginPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [welcomeUser, setWelcomeUser] = useState<{ nombre: string; rol: string; email: string } | null>(null)
+  const [countdown, setCountdown] = useState(3)
   const router = useRouter()
+
+  useEffect(() => {
+    if (!welcomeUser) return
+    if (countdown <= 0) {
+      router.push('/dashboard')
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [welcomeUser, countdown, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -65,7 +89,8 @@ export default function LoginPage() {
       if (data.success) {
         localStorage.setItem('token', data.data!.token)
         localStorage.setItem('user', JSON.stringify(data.data!.user))
-        router.push('/dashboard')
+        setWelcomeUser(data.data!.user)
+        setCountdown(3)
       } else {
         if (data.error === 'Validation Error' && data.details) {
           const validationErrors = data.details.map(detail => detail.message).join(', ')
@@ -79,6 +104,66 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Pantalla de bienvenida post-login
+  if (welcomeUser) {
+    const rol = welcomeUser.rol || 'VENDEDOR'
+    const colors = ROL_COLORS[rol] || ROL_COLORS['ADMIN']
+    const rolLabel = ROL_LABELS[rol] || rol
+    const iniciales = welcomeUser.nombre
+      .split(' ')
+      .slice(0, 2)
+      .map((w: string) => w[0])
+      .join('')
+      .toUpperCase()
+
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br ${colors.bg} p-6 relative overflow-hidden`}>
+        {/* Fondo decorativo */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-10 left-10 w-96 h-96 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-white rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-8 text-center max-w-lg w-full">
+          {/* Avatar con iniciales */}
+          <div className={`w-36 h-36 rounded-full border-4 ${colors.border} bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl`}>
+            <span className="text-5xl font-black text-white tracking-tight">{iniciales}</span>
+          </div>
+
+          {/* Saludo */}
+          <div>
+            <p className={`text-lg font-medium ${colors.text} opacity-80 mb-1 uppercase tracking-widest`}>
+              ¡Bienvenido de nuevo!
+            </p>
+            <h1 className="text-5xl font-black text-white leading-tight mb-3">
+              {welcomeUser.nombre.toUpperCase()}
+            </h1>
+            <span className={`inline-block px-5 py-1.5 rounded-full border text-sm font-bold uppercase tracking-widest ${colors.badge}`}>
+              {rolLabel}
+            </span>
+            <p className={`mt-3 text-sm ${colors.text} opacity-60`}>{welcomeUser.email}</p>
+          </div>
+
+          {/* Contador */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-full border-4 border-white/30 flex items-center justify-center">
+              <span className="text-3xl font-black text-white">{countdown}</span>
+            </div>
+            <p className={`text-sm ${colors.text} opacity-70`}>
+              Entrando al sistema...
+            </p>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="mt-1 px-8 py-2.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white font-semibold rounded-xl backdrop-blur-sm transition-all text-sm"
+            >
+              Entrar ahora →
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

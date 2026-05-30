@@ -476,18 +476,18 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
       <div className={`rounded-xl border-2 p-5 flex items-start gap-4 shadow-md ${
         venta.vendedor_nombre
           ? 'bg-amber-50 border-amber-400'
-          : 'bg-red-50 border-red-400'
+          : 'bg-blue-50 border-blue-400'
       }`}>
         <div className="text-4xl flex-shrink-0 mt-0.5">
-          {venta.vendedor_nombre ? '⚠️' : '🚫'}
+          {venta.vendedor_nombre ? '⚠️' : '🌐'}
         </div>
         <div className="flex-1 min-w-0">
           <p className={`text-base font-extrabold uppercase tracking-wide mb-1 ${
-            venta.vendedor_nombre ? 'text-amber-800' : 'text-red-800'
+            venta.vendedor_nombre ? 'text-amber-800' : 'text-blue-800'
           }`}>
             {venta.vendedor_nombre
               ? 'Esta venta fue registrada por:'
-              : 'Esta venta no tiene vendedor asignado'}
+              : 'Venta Online'}
           </p>
           {venta.vendedor_nombre ? (
             <>
@@ -503,8 +503,8 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
               </p>
             </>
           ) : (
-            <p className="text-sm text-red-800 font-semibold mt-1">
-              Verifica con administración a quién pertenece esta venta antes de registrar el abono.
+            <p className="text-sm text-blue-800 font-semibold mt-1">
+              Esta venta fue realizada por el cliente a través del canal online. No tiene vendedor asignado.
             </p>
           )}
         </div>
@@ -969,12 +969,20 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                   </div>
                   
                   <div className="space-y-3 text-sm">
-                    {venta?.vendedor_nombre && (
+                    {venta?.vendedor_nombre ? (
                       <div className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         <div>
                           <span className="text-xs text-amber-700 font-semibold uppercase tracking-wide block">Venta de:</span>
                           <span className="font-bold text-amber-900">{venta.vendedor_nombre}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-300 rounded-lg px-3 py-2 flex items-center gap-2">
+                        <span className="text-lg">🌐</span>
+                        <div>
+                          <span className="text-xs text-blue-700 font-semibold uppercase tracking-wide block">Canal:</span>
+                          <span className="font-bold text-blue-900">Venta Online</span>
                         </div>
                       </div>
                     )}
