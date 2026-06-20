@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ventasApi } from '@/lib/ventasApi'
 import { getStorageImageUrl } from '@/lib/storageImageUrl'
 import ReciboAbono, { ReciboAbonoData } from './ReciboAbono'
+import BoletaTicket from '@/components/BoletaTicket'
+import ResponsiveBoletaWrapper from '@/components/ResponsiveBoletaWrapper'
 import { formatearInputPesos, parsearInputPesos } from '@/utils/formatPesos'
-import { normalizarTelefono } from '@/utils/telefono'
+import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
+import { generarWhatsAppChatLink } from '@/utils/telefono'
+import { WHATSAPP_VENTAS_ACTIVO } from '@/config/features'
 
 interface Props {
   ventaId: string
@@ -32,6 +36,20 @@ interface AbonoBoletaHistorial {
   fecha: string
 }
 
+interface BoletaVenta {
+  id: string
+  numero: number
+  estado: string
+  bloqueo_hasta?: string | null
+  precio_boleta?: number
+  total_pagado_boleta?: number
+  saldo_pendiente_boleta?: number
+  qr_url?: string
+  imagen_url?: string
+  nota?: string | null
+  abonos?: AbonoBoletaHistorial[]
+}
+
 interface VentaNormalizada {
   id: string
   monto_total: number
@@ -41,22 +59,70 @@ interface VentaNormalizada {
   nombre: string
   telefono: string
   email?: string
+  cliente_identificacion?: string
+  rifa_nombre?: string
   created_at?: string
   vendedor_nombre?: string | null
   vendedor_email?: string | null
   abonos: Array<{ id: string; monto: number; created_at: string; metodo_pago?: string }>
-  boletas?: Array<{
-    id: string
-    numero: number
-    estado: string
-    bloqueo_hasta?: string | null
-    precio_boleta?: number
-    total_pagado_boleta?: number
-    saldo_pendiente_boleta?: number
-    qr_url?: string
-    imagen_url?: string
-    abonos?: AbonoBoletaHistorial[]
-  }>
+  boletas?: BoletaVenta[]
+}
+
+function normalizarVenta(d: any): VentaNormalizada {
+  const totalVenta = Number(d.total_venta ?? d.monto_total ?? 0)
+  const totalPagado = Number(d.total_pagado ?? 0)
+  return {
+    id: d.id,
+    monto_total: totalVenta,
+    total_pagado: totalPagado,
+    saldo_pendiente: d.saldo_pendiente ?? totalVenta - totalPagado,
+    estado_venta: d.estado_venta ?? 'PENDIENTE',
+    nombre: d.cliente_nombre ?? d.nombre ?? '',
+    telefono: d.cliente_telefono ?? d.telefono ?? '',
+    email: d.cliente_email ?? d.email,
+    cliente_identificacion: d.cliente_identificacion ?? '',
+    rifa_nombre: d.rifa_nombre ?? '',
+    created_at: d.created_at,
+    vendedor_nombre: d.vendedor_nombre ?? null,
+    vendedor_email: d.vendedor_email ?? null,
+    abonos: d.abonos ?? [],
+    boletas: d.boletas ?? [],
+  }
+}
+
+function buildReciboData(
+  venta: VentaNormalizada,
+  opts: { tipo: 'abono' | 'pago_total'; montoRegistrado: number; metodoPago: string; notas?: string }
+): ReciboAbonoData {
+  return {
+    tipo: opts.tipo,
+    montoRegistrado: opts.montoRegistrado,
+    totalVenta: venta.monto_total,
+    totalPagado: venta.total_pagado,
+    saldoPendiente: venta.saldo_pendiente,
+    clienteNombre: venta.nombre,
+    clienteTelefono: venta.telefono,
+    clienteEmail: venta.email,
+    metodoPago: opts.metodoPago,
+    notas: opts.notas,
+    ventaId: venta.id,
+    boletas: (venta.boletas || []).map((b) => ({
+      numero: b.numero,
+      estado: b.estado,
+      precioBoleta: b.precio_boleta || 0,
+      totalPagado: b.total_pagado_boleta || 0,
+      saldoPendiente: b.saldo_pendiente_boleta || 0,
+    })),
+  }
+}
+
+function estadoBoletaTicket(b: BoletaVenta): string {
+  if (b.estado === 'PAGADA') return 'PAGADA'
+  if (b.estado === 'ABONADA' || ((b.total_pagado_boleta ?? 0) > 0 && (b.saldo_pendiente_boleta ?? 0) > 0)) {
+    return 'ABONADA'
+  }
+  if (b.estado === 'RESERVADA') return 'RESERVADA'
+  return b.estado
 }
 
 const MEDIOS_PAGO = [
@@ -81,6 +147,8 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
   const [pagarTodo, setPagarTodo] = useState(false)
   const [exitoReciente, setExitoReciente] = useState<ExitoReciente>(null)
   const [reciboData, setReciboData] = useState<ReciboAbonoData | null>(null)
+  const [mostrarReciboModal, setMostrarReciboModal] = useState(false)
+  const [boletasDescargaIds, setBoletasDescargaIds] = useState<string[]>([])
   const [boletasSeleccionadas, setBoletasSeleccionadas] = useState<BoletasSeleccionadas>({})
   const [historialExpandido, setHistorialExpandido] = useState<Record<string, boolean>>({})
   const [mostrarConfirmacionAbono, setMostrarConfirmacionAbono] = useState(false)
@@ -89,38 +157,48 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
     cargarDetalle()
   }, [ventaId])
 
-  const cargarDetalle = async () => {
+  const cargarDetalle = async (opts?: { silent?: boolean }): Promise<VentaNormalizada | null> => {
     try {
-      setLoading(true)
+      if (!opts?.silent) setLoading(true)
       setError(null)
       const response = await ventasApi.getVentaDetalleFinanciero(ventaId)
-      const d = response.data as any
-      const totalVenta = Number(d.total_venta ?? d.monto_total ?? 0)
-      const totalPagado = Number(d.total_pagado ?? 0)
-      setVenta({
-        id: d.id,
-        monto_total: totalVenta,
-        total_pagado: totalPagado,
-        saldo_pendiente: d.saldo_pendiente ?? totalVenta - totalPagado,
-        estado_venta: d.estado_venta ?? 'PENDIENTE',
-        nombre: d.cliente_nombre ?? d.nombre ?? '',
-        telefono: d.cliente_telefono ?? d.telefono ?? '',
-        email: d.cliente_email ?? d.email,
-        created_at: d.created_at,
-        vendedor_nombre: d.vendedor_nombre ?? null,
-        vendedor_email: d.vendedor_email ?? null,
-        abonos: d.abonos ?? [],
-        boletas: d.boletas ?? []
-      })
-      setPagarTodo(false)
-      setMonto(0)
-      setNotas('')
+      const normalized = normalizarVenta(response.data)
+      setVenta(normalized)
+      if (!opts?.silent) {
+        setPagarTodo(false)
+        setMonto(0)
+        setNotas('')
+      }
+      return normalized
     } catch (err: any) {
       setError(err?.message || 'Error cargando detalle')
+      return null
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
+
+  const descargarBoleta = useCallback(async (boletaNumero: number, identificacion: string, elementId: string) => {
+    try {
+      const cc = (identificacion || 'SIN_CC').replace(/\s+/g, '_')
+      await downloadBoletaImage({
+        elementId,
+        fileName: `boleta_${boletaNumero.toString().padStart(4, '0')}_CC_${cc}.png`,
+      })
+    } catch (err) {
+      console.error('Error descargando boleta:', err)
+    }
+  }, [])
+
+  const descargarTodasBoletas = useCallback(
+    async (boletas: BoletaVenta[], identificacion: string) => {
+      for (const b of boletas) {
+        await descargarBoleta(b.numero, identificacion, `boleta-print-${b.id}`)
+        await new Promise((r) => setTimeout(r, 500))
+      }
+    },
+    [descargarBoleta]
+  )
 
   const registrarAbono = async () => {
     if (!venta) return
@@ -164,63 +242,44 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
       setProcesando(true)
       setError(null)
       try {
+        const notasAbono = notas.trim() || undefined
         await ventasApi.registrarAbono(ventaId, {
           monto: totalMulti,
           metodo_pago: metodoPago,
-          notas: notas.trim() || undefined,
+          notas: notasAbono,
           boletas_abono: boletasAbono
         })
-        await cargarDetalle()
+        const ventaActualizada = await cargarDetalle({ silent: true })
+        if (!ventaActualizada) return
+
         setBoletasSeleccionadas({})
         setMonto(0)
         setNotas('')
         setAccion(null)
-        
-        const numerosAbonados = boletasAbono.map(ba => {
-          const b = venta.boletas?.find(x => x.id === ba.boleta_id)
+
+        const numerosAbonados = boletasAbono.map((ba) => {
+          const b = ventaActualizada.boletas?.find((x) => x.id === ba.boleta_id)
           return b?.numero ?? 0
         })
 
-        // Verificar si se saldó toda la deuda
-        const nuevoSaldo = Number(venta.saldo_pendiente || 0) - totalMulti
-        const nuevoPagado = Number(venta.total_pagado || 0) + totalMulti
+        const esPagoTotal = ventaActualizada.saldo_pendiente <= 0
+        const mpLabel = MEDIOS_PAGO.find((m) => m.id === metodoPago)?.label || metodoPago
+
+        setBoletasDescargaIds(boletasAbono.map((ba) => ba.boleta_id))
         setExitoReciente({
-          tipo: nuevoSaldo <= 0 ? 'pago_total' : 'abono',
+          tipo: esPagoTotal ? 'pago_total' : 'abono',
           monto: totalMulti,
-          boletaNumeros: numerosAbonados
+          boletaNumeros: numerosAbonados,
         })
-        // Obtener label del medio de pago
-        const mpLabel = MEDIOS_PAGO.find(m => m.id === metodoPago)?.label || metodoPago
-        // Mapa de abono por boleta para calcular estado post-abono
-        const abonoMap: Record<string, number> = {}
-        for (const ba of boletasAbono) { abonoMap[ba.boleta_id] = ba.monto }
-        setReciboData({
-          tipo: nuevoSaldo <= 0 ? 'pago_total' : 'abono',
-          montoRegistrado: totalMulti,
-          totalVenta: venta.monto_total,
-          totalPagado: nuevoPagado,
-          saldoPendiente: nuevoSaldo > 0 ? nuevoSaldo : 0,
-          clienteNombre: venta.nombre,
-          clienteTelefono: venta.telefono,
-          clienteEmail: venta.email,
-          metodoPago: mpLabel,
-          notas: notas.trim() || undefined,
-          ventaId: venta.id,
-          boletas: (venta.boletas || []).map(b => {
-            const abonoEsta = abonoMap[b.id] || 0
-            const nuevoTotalPagado = (b.total_pagado_boleta || 0) + abonoEsta
-            const precio = b.precio_boleta || 0
-            const nuevoSaldoBoleta = precio - nuevoTotalPagado
-            const nuevoEstado = nuevoTotalPagado >= precio ? 'PAGADA' : nuevoTotalPagado > 0 ? 'ABONADA' : b.estado
-            return {
-              numero: b.numero,
-              estado: nuevoEstado,
-              precioBoleta: precio,
-              totalPagado: nuevoTotalPagado,
-              saldoPendiente: nuevoSaldoBoleta > 0 ? nuevoSaldoBoleta : 0
-            }
+        setReciboData(
+          buildReciboData(ventaActualizada, {
+            tipo: esPagoTotal ? 'pago_total' : 'abono',
+            montoRegistrado: totalMulti,
+            metodoPago: mpLabel,
+            notas: notasAbono,
           })
-        })
+        )
+        setMostrarReciboModal(false)
       } catch (err: any) {
         const responseData = err?.response?.data
         let mensajeError = 'Error registrando abono'
@@ -255,59 +314,36 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
       setProcesando(true)
       setError(null)
       try {
+        const notasAbono = notas.trim() || undefined
         await ventasApi.registrarAbono(ventaId, {
           monto: montoValidado,
           metodo_pago: metodoPago,
-          notas: notas.trim() || undefined
+          notas: notasAbono
         })
-        await cargarDetalle()
+        const ventaActualizada = await cargarDetalle({ silent: true })
+        if (!ventaActualizada) return
+
         setMonto(0)
         setNotas('')
         setAccion(null)
-        const esPagoTotal = venta.saldo_pendiente - montoValidado <= 0
-        const nuevoPagadoGen = Number(venta.total_pagado || 0) + montoValidado
-        const nuevoSaldoGen = Number(venta.saldo_pendiente || 0) - montoValidado
+
+        const esPagoTotal = ventaActualizada.saldo_pendiente <= 0
+        const mpLabelGen = MEDIOS_PAGO.find((m) => m.id === metodoPago)?.label || metodoPago
+
+        setBoletasDescargaIds((ventaActualizada.boletas || []).map((b) => b.id))
         setExitoReciente({
           tipo: esPagoTotal ? 'pago_total' : 'abono',
-          monto: montoValidado
+          monto: montoValidado,
         })
-        const mpLabelGen = MEDIOS_PAGO.find(m => m.id === metodoPago)?.label || metodoPago
-        // Para abono general, distribuir monto proporcionalmente entre boletas con saldo
-        let montoRestanteGen = montoValidado
-        const boletasPostAbono = (venta.boletas || []).map(b => {
-          const precio = b.precio_boleta || 0
-          const pagadoPrev = b.total_pagado_boleta || 0
-          const saldoB = b.saldo_pendiente_boleta ?? (precio - pagadoPrev)
-          let abonoEstaB = 0
-          if (montoRestanteGen > 0 && saldoB > 0) {
-            abonoEstaB = Math.min(montoRestanteGen, saldoB)
-            montoRestanteGen -= abonoEstaB
-          }
-          const nuevoTotalPagB = pagadoPrev + abonoEstaB
-          const nuevoSaldoB = precio - nuevoTotalPagB
-          const nuevoEstB = nuevoTotalPagB >= precio ? 'PAGADA' : nuevoTotalPagB > 0 ? 'ABONADA' : b.estado
-          return {
-            numero: b.numero,
-            estado: nuevoEstB,
-            precioBoleta: precio,
-            totalPagado: nuevoTotalPagB,
-            saldoPendiente: nuevoSaldoB > 0 ? nuevoSaldoB : 0
-          }
-        })
-        setReciboData({
-          tipo: esPagoTotal ? 'pago_total' : 'abono',
-          montoRegistrado: montoValidado,
-          totalVenta: venta.monto_total,
-          totalPagado: nuevoPagadoGen,
-          saldoPendiente: nuevoSaldoGen > 0 ? nuevoSaldoGen : 0,
-          clienteNombre: venta.nombre,
-          clienteTelefono: venta.telefono,
-          clienteEmail: venta.email,
-          metodoPago: mpLabelGen,
-          notas: notas.trim() || undefined,
-          ventaId: venta.id,
-          boletas: boletasPostAbono
-        })
+        setReciboData(
+          buildReciboData(ventaActualizada, {
+            tipo: esPagoTotal ? 'pago_total' : 'abono',
+            montoRegistrado: montoValidado,
+            metodoPago: mpLabelGen,
+            notas: notasAbono,
+          })
+        )
+        setMostrarReciboModal(false)
       } catch (err: any) {
         const responseData = err?.response?.data
         let mensajeError = 'Error registrando abono'
@@ -367,58 +403,158 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
 
   const cerrarExitoYVolver = () => {
     setExitoReciente(null)
+    setReciboData(null)
+    setMostrarReciboModal(false)
+    setBoletasDescargaIds([])
     onAbonoRegistrado()
   }
 
-  // Generar link de WhatsApp con resumen de cuenta
-  const generarWhatsAppAbonoLink = () => {
-    if (!venta || !venta.telefono) return null
-    
-    const telefonoCompleto = normalizarTelefono(venta.telefono)
-    if (!telefonoCompleto || telefonoCompleto.length < 7) return null
+  const whatsappChatLink = venta ? generarWhatsAppChatLink(venta.telefono) : null
 
-    const nombre = venta.nombre || 'Cliente'
-    const boletasInfo = venta.boletas && venta.boletas.length > 0
-      ? venta.boletas.map(b => {
-          const num = `#${b.numero.toString().padStart(4, '0')}`
-          const estado = b.estado === 'PAGADA' ? '✅ Pagada' 
-            : b.estado === 'ABONADA' ? `💰 Abonada ($${(b.total_pagado_boleta || 0).toLocaleString('es-CO')} de $${(b.precio_boleta || 0).toLocaleString('es-CO')})`
-            : b.estado === 'RESERVADA' ? '🔒 Reservada (sin pagos)'
-            : `📋 ${b.estado}`
-          return `  ${num}: ${estado}`
-        }).join('\n')
-      : ''
+  if (exitoReciente && reciboData && venta) {
+    const boletasParaDescarga = (venta.boletas || []).filter((b) => boletasDescargaIds.includes(b.id))
+    const identificacion = venta.cliente_identificacion || 'SIN_CC'
 
-    let mensaje = ''
-    if (exitoReciente?.tipo === 'pago_total' && venta.saldo_pendiente <= 0) {
-      mensaje = `Hola ${nombre}, te confirmamos que tu pago de *$${exitoReciente.monto.toLocaleString('es-CO')}* fue registrado exitosamente. 🎉\n\n`
-      mensaje += `*Estado de tu cuenta:*\n`
-      mensaje += `💵 Total: $${venta.monto_total.toLocaleString('es-CO')}\n`
-      mensaje += `✅ Pagado: $${venta.total_pagado.toLocaleString('es-CO')}\n`
-      mensaje += `🎉 *¡Cuenta saldada!*\n`
-      if (boletasInfo) {
-        mensaje += `\n*Tus boletas:*\n${boletasInfo}\n`
-      }
-      mensaje += `\n¡Mucha suerte! 🍀`
-      mensaje += `\n\n📲 *Revisa tus boletas aquí:*\nhttps://elgrancamion.com/boletas`
-    } else {
-      mensaje = `Hola ${nombre}, te confirmamos que tu abono de *$${(exitoReciente?.monto || 0).toLocaleString('es-CO')}* fue registrado exitosamente. ✅\n\n`
-      if (boletasInfo) {
-        mensaje += `*Tus boletas:*\n${boletasInfo}\n\n`
-      }
-      mensaje += `¡Gracias por tu pago! 🙏`
-      mensaje += `\n\n📲 *Revisa tus boletas aquí:*\nhttps://elgrancamion.com/boletas`
-    }
-
-    return `https://wa.me/${telefonoCompleto}?text=${encodeURIComponent(mensaje)}`
-  }
-
-  if (exitoReciente && reciboData) {
     return (
-      <ReciboAbono
-        data={reciboData}
-        onClose={cerrarExitoYVolver}
-      />
+      <div className="pb-28 sm:pb-8">
+        {mostrarReciboModal && reciboData && (
+          <ReciboAbono
+            data={reciboData}
+            onClose={() => setMostrarReciboModal(false)}
+          />
+        )}
+
+        {/* Resumen del abono */}
+        <div className="bg-white rounded-lg shadow-sm border border-green-200 p-6 mb-6">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-green-100 rounded-full mb-3">
+              <span className="text-3xl">{exitoReciente.tipo === 'pago_total' ? '🎉' : '✅'}</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">
+              {exitoReciente.tipo === 'pago_total' ? '¡Pago completado!' : 'Abono registrado exitosamente'}
+            </h2>
+            <p className="text-slate-600 mt-1">
+              Se registró <span className="font-semibold text-green-700">${exitoReciente.monto.toLocaleString('es-CO')}</span>
+              {exitoReciente.boletaNumeros && exitoReciente.boletaNumeros.length > 0 && (
+                <> en {exitoReciente.boletaNumeros.length} boleta{exitoReciente.boletaNumeros.length > 1 ? 's' : ''}</>
+              )}
+            </p>
+            {venta.saldo_pendiente > 0 ? (
+              <p className="text-sm text-orange-700 mt-2">
+                Saldo pendiente: <span className="font-semibold">${venta.saldo_pendiente.toLocaleString('es-CO')}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-green-700 font-semibold mt-2">¡Cuenta saldada!</p>
+            )}
+          </div>
+        </div>
+
+        {/* Boletas actualizadas */}
+        {boletasParaDescarga.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h3 className="text-lg font-medium text-slate-900">
+                Boletas actualizadas ({boletasParaDescarga.length})
+              </h3>
+              {boletasParaDescarga.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => descargarTodasBoletas(boletasParaDescarga, identificacion)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                >
+                  Descargar Todas
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              {boletasParaDescarga.map((b) => (
+                <div key={b.id} className="border border-slate-200 rounded-lg p-4 overflow-visible">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                      <span className="font-bold text-slate-900">
+                        Boleta #{b.numero.toString().padStart(4, '0')}
+                      </span>
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                        {b.estado}
+                      </span>
+                      {(b.saldo_pendiente_boleta ?? 0) > 0 && (
+                        <span className="ml-2 text-xs text-orange-700">
+                          Saldo: ${(b.saldo_pendiente_boleta ?? 0).toLocaleString('es-CO')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => descargarBoleta(b.numero, identificacion, `boleta-print-${b.id}`)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium"
+                      >
+                        Descargar
+                      </button>
+                      <Link
+                        href={`/boletas/${b.id}/print`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs font-medium"
+                      >
+                        Imprimir
+                      </Link>
+                    </div>
+                  </div>
+                  <ResponsiveBoletaWrapper id={`boleta-print-${b.id}`}>
+                    <BoletaTicket
+                      qrUrl={b.qr_url || `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=boleta-${b.id}`}
+                      barcode=""
+                      numero={b.numero}
+                      imagenUrl={b.imagen_url}
+                      rifaNombre={venta.rifa_nombre || ''}
+                      estado={estadoBoletaTicket(b)}
+                      clienteInfo={{
+                        nombre: venta.nombre,
+                        identificacion: venta.cliente_identificacion,
+                      }}
+                      deuda={b.saldo_pendiente_boleta ?? 0}
+                      reservadaHasta={b.bloqueo_hasta}
+                      precio={b.precio_boleta ?? null}
+                      nota={b.nota}
+                    />
+                  </ResponsiveBoletaWrapper>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Barra de acciones fija en móvil para que no se corte el contenido final */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0 sm:pb-0">
+          <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMostrarReciboModal(true)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Ver recibo
+            </button>
+            {WHATSAPP_VENTAS_ACTIVO && whatsappChatLink && (
+              <a
+                href={whatsappChatLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium inline-flex items-center gap-2"
+              >
+                Abrir WhatsApp del cliente
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={cerrarExitoYVolver}
+              className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 

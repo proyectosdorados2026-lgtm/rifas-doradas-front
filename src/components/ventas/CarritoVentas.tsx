@@ -277,7 +277,7 @@ export default function CarritoVentas({
     const boletasVenta = ventaResponse?.boletas ?? []
 
     return (
-      <div className="space-y-6 pb-8">
+      <div className="space-y-6 pb-28 sm:pb-8">
         {/* Modal de Recibo/Factura */}
         {reciboData && (
           <ReciboAbono
@@ -306,7 +306,7 @@ export default function CarritoVentas({
 
             <div className="space-y-6">
               {boletasVenta.map((b: any) => (
-                <div key={b.id} className="border border-slate-200 rounded-lg p-4">
+                <div key={b.id} className="border border-slate-200 rounded-lg p-4 overflow-visible">
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-bold text-slate-900">Boleta #{b.numero.toString().padStart(4, '0')}</span>
                     <div className="flex gap-2">
@@ -365,7 +365,8 @@ export default function CarritoVentas({
         )}
 
         {/* Botones de acción */}
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:border-0 sm:backdrop-blur-none sm:px-0 sm:py-0 sm:pb-0">
+          <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-3">
           {WHATSAPP_VENTAS_ACTIVO && whatsappLink && (
             <a
               href={whatsappLink}
@@ -424,6 +425,7 @@ export default function CarritoVentas({
           >
             Nueva Venta
           </button>
+          </div>
         </div>
       </div>
     )

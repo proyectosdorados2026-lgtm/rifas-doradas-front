@@ -17,24 +17,34 @@ export default function ResponsiveBoletaWrapper({ children, id }: { children: Re
   useEffect(() => {
     const updateScale = () => {
       if (!containerRef.current) return
-      const parentWidth = containerRef.current.parentElement?.clientWidth ?? containerRef.current.clientWidth
+      const parentWidth =
+        containerRef.current.parentElement?.clientWidth ?? containerRef.current.clientWidth
       const ticketWidth = 800
       const newScale = parentWidth < ticketWidth ? parentWidth / ticketWidth : 1
       setScale(newScale)
     }
 
     updateScale()
+
+    const ro = new ResizeObserver(updateScale)
+    const parent = containerRef.current?.parentElement
+    if (parent) ro.observe(parent)
     window.addEventListener('resize', updateScale)
-    return () => window.removeEventListener('resize', updateScale)
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', updateScale)
+    }
   }, [])
 
-  const scaledHeight = 352 * scale
+  // Pequeño buffer para evitar recorte por subpíxeles al escalar
+  const scaledHeight = Math.ceil(352 * scale) + 4
 
   return (
     <div
       ref={containerRef}
-      className="w-full relative overflow-hidden"
-      style={{ height: `${scaledHeight}px` }}
+      className="w-full relative"
+      style={{ height: `${scaledHeight}px`, minHeight: `${scaledHeight}px` }}
     >
       <div
         id={id}
