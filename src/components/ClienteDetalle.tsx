@@ -11,6 +11,7 @@ import {
   BoletaDetalle,
   AbonoHistorial,
 } from '@/types/cliente'
+import ClienteHistorialMovimientos from '@/components/ClienteHistorialMovimientos'
 
 interface ClienteDetalleProps {
   clienteId: string
@@ -55,8 +56,21 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
   const [rifas, setRifas] = useState<RifaConBoletas[]>([])
   const [abonos, setAbonos] = useState<AbonoHistorial[]>([])
   const [filtroEstado, setFiltroEstado] = useState<FilterEstado>('TODAS')
-  const [activeTab, setActiveTab] = useState<'boletas' | 'abonos'>('boletas')
+  const [activeTab, setActiveTab] = useState<'boletas' | 'abonos' | 'movimientos'>('boletas')
   const [expandedRifas, setExpandedRifas] = useState<Set<string>>(new Set())
+  const [canVerHistorial, setCanVerHistorial] = useState(false)
+
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const rol = (JSON.parse(userData).rol || '').toUpperCase()
+        setCanVerHistorial(['SUPER_ADMIN', 'ADMIN'].includes(rol))
+      }
+    } catch {
+      setCanVerHistorial(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchDetalle()
@@ -330,6 +344,18 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
         >
           💰 Historial de Abonos ({abonos.length})
         </button>
+        {canVerHistorial && (
+          <button
+            onClick={() => setActiveTab('movimientos')}
+            className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${
+              activeTab === 'movimientos'
+                ? 'border-slate-900 text-black'
+                : 'border-transparent text-slate-500 hover:text-black'
+            }`}
+          >
+            📜 Movimientos
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
@@ -421,6 +447,10 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'movimientos' && canVerHistorial && (
+        <ClienteHistorialMovimientos clienteId={clienteId} />
       )}
     </div>
   )
