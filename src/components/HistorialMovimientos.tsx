@@ -35,6 +35,23 @@ function formatFecha(iso: string) {
   })
 }
 
+const ROL_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
+  VENDEDOR: 'Vendedor',
+}
+
+function formatUsuario(mov: MovimientoHistorial) {
+  if (mov.usuario_nombre) {
+    const rol = mov.usuario_rol ? ROL_LABELS[mov.usuario_rol] || mov.usuario_rol : null
+    return { nombre: mov.usuario_nombre, rol }
+  }
+  if (mov.origen?.includes('public') || mov.origen?.includes('online')) {
+    return { nombre: 'Venta online', rol: null }
+  }
+  return { nombre: null, rol: null }
+}
+
 function formatBoleta(numero: number | null) {
   if (numero == null) return '—'
   return `#${String(numero).padStart(4, '0')}`
@@ -54,6 +71,7 @@ function MovimientoRow({ mov, expanded, onToggle }: {
     mov.cliente_identificacion ||
     mov.cliente_anterior_identificacion ||
     null
+  const usuario = formatUsuario(mov)
 
   return (
     <>
@@ -74,6 +92,18 @@ function MovimientoRow({ mov, expanded, onToggle }: {
         </td>
         <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-800 align-top">
           {formatBoleta(mov.numero)}
+        </td>
+        <td className="px-4 py-3 text-sm align-top">
+          {usuario.nombre ? (
+            <div>
+              <p className="font-medium text-slate-800">{usuario.nombre}</p>
+              {usuario.rol && (
+                <p className="text-[11px] text-indigo-600 font-medium">{usuario.rol}</p>
+              )}
+            </div>
+          ) : (
+            <span className="text-slate-400">—</span>
+          )}
         </td>
         <td className="px-4 py-3 text-sm align-top">
           {cliente ? (
@@ -114,7 +144,7 @@ function MovimientoRow({ mov, expanded, onToggle }: {
       </tr>
       {expanded && (
         <tr className="bg-slate-50/60 border-b border-slate-100">
-          <td colSpan={8} className="px-4 py-3">
+          <td colSpan={9} className="px-4 py-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               {mov.notas && (
                 <div>
@@ -422,6 +452,7 @@ export default function HistorialMovimientos() {
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Tipo</th>
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Acción</th>
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Boleta</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Realizado por</th>
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Cliente</th>
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                     <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Monto</th>

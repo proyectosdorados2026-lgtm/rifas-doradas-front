@@ -25,6 +25,7 @@ export interface MovimientoHistorial {
   cliente_anterior_nombre: string | null
   cliente_anterior_identificacion: string | null
   usuario_nombre: string | null
+  usuario_rol: string | null
 }
 
 export interface HistorialListResponse {
