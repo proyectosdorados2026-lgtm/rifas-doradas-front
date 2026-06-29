@@ -1,5 +1,10 @@
-export const BOLETA_WIDTH = 800
-export const BOLETA_HEIGHT = 352
+import {
+  BOLETA_WIDTH,
+  BOLETA_DEFAULT_HEIGHT,
+} from '@/constants/boletaDimensions'
+
+export { BOLETA_WIDTH, BOLETA_DEFAULT_HEIGHT }
+export { BOLETA_DEFAULT_HEIGHT as BOLETA_HEIGHT }
 
 function isMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -12,7 +17,7 @@ function exportScale(custom?: number): number {
 }
 
 /**
- * Neutralise CSS transforms on ancestors so html2canvas captures 800×352 at 1:1.
+ * Neutralise CSS transforms on ancestors so html2canvas captures at 1:1.
  */
 function neutraliseAncestorTransforms(el: HTMLElement): () => void {
   const saved: { el: HTMLElement; transform: string; height: string; minHeight: string }[] = []
@@ -126,7 +131,8 @@ export async function captureBoletaTicket(
   const prevMinWidth = ticket.style.minWidth
 
   ticket.style.width = `${BOLETA_WIDTH}px`
-  ticket.style.height = `${BOLETA_HEIGHT}px`
+  const captureHeight = ticket.offsetHeight || BOLETA_DEFAULT_HEIGHT
+  ticket.style.height = `${captureHeight}px`
   ticket.style.minWidth = `${BOLETA_WIDTH}px`
 
   try {
@@ -134,7 +140,7 @@ export async function captureBoletaTicket(
     const html2canvas = (await import('html2canvas-pro')).default
     return await html2canvas(ticket, {
       width: BOLETA_WIDTH,
-      height: BOLETA_HEIGHT,
+      height: captureHeight,
       scale: exportScale(scale),
       useCORS: true,
       allowTaint: true,

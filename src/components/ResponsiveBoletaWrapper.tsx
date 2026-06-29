@@ -1,26 +1,24 @@
 'use client'
 
 import { useRef, useEffect, useState, ReactNode } from 'react'
+import { BOLETA_WIDTH, BOLETA_DEFAULT_HEIGHT } from '@/constants/boletaDimensions'
 
 /**
- * Wrapper que escala visualmente un BoletaTicket (800×352px fijo)
- * para que quepa en cualquier contenedor sin scroll horizontal.
- *
- * - NO altera las dimensiones del ticket → html2canvas captura los 800×352px completos.
- * - Usa CSS transform: scale() para reducir visualmente si el contenedor es < 800px.
- * - En pantallas ≥ 800px, no aplica escala (se ve 1:1).
+ * Wrapper que escala visualmente un BoletaTicket para pantallas estrechas.
+ * La altura se adapta al ticket real (según proporción del arte de la rifa).
  */
 export default function ResponsiveBoletaWrapper({ children, id }: { children: ReactNode; id?: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [ticketHeight, setTicketHeight] = useState(BOLETA_DEFAULT_HEIGHT)
 
   useEffect(() => {
     const updateScale = () => {
       if (!containerRef.current) return
       const parentWidth =
         containerRef.current.parentElement?.clientWidth ?? containerRef.current.clientWidth
-      const ticketWidth = 800
-      const newScale = parentWidth < ticketWidth ? parentWidth / ticketWidth : 1
+      const newScale = parentWidth < BOLETA_WIDTH ? parentWidth / BOLETA_WIDTH : 1
       setScale(newScale)
     }
 
@@ -37,8 +35,25 @@ export default function ResponsiveBoletaWrapper({ children, id }: { children: Re
     }
   }, [])
 
-  // Pequeño buffer para evitar recorte por subpíxeles al escalar
-  const scaledHeight = Math.ceil(352 * scale) + 4
+  useEffect(() => {
+    const inner = innerRef.current
+    if (!inner) return
+
+    const observeTicket = () => {
+      const ticket = inner.querySelector('.boleta-ticket') as HTMLElement | null
+      if (!ticket) return
+      const h = ticket.offsetHeight
+      if (h > 0) setTicketHeight(h)
+    }
+
+    observeTicket()
+    const ro = new ResizeObserver(observeTicket)
+    const ticket = inner.querySelector('.boleta-ticket')
+    if (ticket) ro.observe(ticket)
+    return () => ro.disconnect()
+  }, [children])
+
+  const scaledHeight = Math.ceil(ticketHeight * scale) + 4
 
   return (
     <div
@@ -47,6 +62,7 @@ export default function ResponsiveBoletaWrapper({ children, id }: { children: Re
       style={{ height: `${scaledHeight}px`, minHeight: `${scaledHeight}px` }}
     >
       <div
+        ref={innerRef}
         id={id}
         style={{
           position: 'absolute',
@@ -54,8 +70,8 @@ export default function ResponsiveBoletaWrapper({ children, id }: { children: Re
           left: '50%',
           transform: `translateX(-50%) scale(${scale})`,
           transformOrigin: 'top center',
-          width: '800px',
-          height: '352px',
+          width: `${BOLETA_WIDTH}px`,
+          height: `${ticketHeight}px`,
           boxSizing: 'border-box',
         }}
       >

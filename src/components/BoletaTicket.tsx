@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getStorageImageUrl } from '@/lib/storageImageUrl'
+import {
+  BOLETA_WIDTH,
+  BOLETA_LEFT_WIDTH,
+  BOLETA_RIGHT_WIDTH,
+  BOLETA_DEFAULT_HEIGHT,
+  boletaHeightForImage,
+} from '@/constants/boletaDimensions'
 
 interface BoletaTicketProps {
   qrUrl: string
@@ -36,8 +43,23 @@ export default function BoletaTicket(props: BoletaTicketProps) {
   } = props
 
   const [imageError, setImageError] = useState(false)
+  const [ticketHeight, setTicketHeight] = useState(BOLETA_DEFAULT_HEIGHT)
   const imagen = getStorageImageUrl(imagenUrl ?? null) ?? imagenUrl
   const hasImagen = Boolean(imagen && imagen.trim())
+
+  useEffect(() => {
+    if (!hasImagen || !imagen) {
+      setTicketHeight(BOLETA_DEFAULT_HEIGHT)
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      setTicketHeight(boletaHeightForImage(img.naturalWidth, img.naturalHeight))
+    }
+    img.onerror = () => setTicketHeight(BOLETA_DEFAULT_HEIGHT)
+    img.src = imagen
+  }, [imagen, hasImagen])
 
   // --- Helpers ---
   const estadoNorm = (estado ?? '').toString().trim().toUpperCase()
@@ -170,19 +192,18 @@ export default function BoletaTicket(props: BoletaTicketProps) {
     )
   }
 
-  // Dimensiones fijas 800×352 — necesario para que html2canvas capture completo.
-  // El wrapper padre (ResponsiveBoletaWrapper) se encarga de escalar visualmente.
+  // Dimensiones: ancho fijo 800px; altura según proporción del arte de la rifa (~334px).
   return (
     <div
       className="boleta-ticket flex border-2 border-black overflow-hidden bg-white"
-      style={{ width: '800px', height: '352px', minWidth: '800px' }}
+      style={{ width: `${BOLETA_WIDTH}px`, height: `${ticketHeight}px`, minWidth: `${BOLETA_WIDTH}px` }}
     >
       {/* LEFT */}
       <div
         className="flex-shrink-0 p-2 flex flex-col justify-between border-r-2 border-black"
         style={{
-          width: '210px',
-          height: '352px',
+          width: `${BOLETA_LEFT_WIDTH}px`,
+          height: `${ticketHeight}px`,
           fontFamily: 'Arial, Helvetica, sans-serif',
           fontKerning: 'none',
           fontVariantLigatures: 'none',
@@ -244,12 +265,19 @@ export default function BoletaTicket(props: BoletaTicketProps) {
         </div>
       </div>
 
-      {/* RIGHT — 800 - 210 = 590px (621px recortaba ~31px con overflow:hidden) */}
-      <div className="flex-shrink-0 h-full" style={{ width: '590px' }}>
+      {/* RIGHT — altura = ticketHeight para que el arte llene sin márgenes */}
+      <div className="flex-shrink-0 h-full" style={{ width: `${BOLETA_RIGHT_WIDTH}px` }}>
         {hasImagen && !imageError && imagen ? (
           <img
             src={imagen}
-            className="w-full h-full object-contain object-left"
+            className="block w-full h-full"
+            style={{ objectFit: 'fill' }}
+            onLoad={(e) => {
+              const img = e.currentTarget
+              if (img.naturalWidth > 0) {
+                setTicketHeight(boletaHeightForImage(img.naturalWidth, img.naturalHeight))
+              }
+            }}
             onError={() => setImageError(true)}
             alt={rifaNombre}
           />

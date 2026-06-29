@@ -7,6 +7,13 @@ import type { Rifa } from '@/types/rifa'
 import { getStorageImageUrl } from '@/lib/storageImageUrl'
 import { boletaApi } from '@/lib/boletaApi'
 import { downloadBoletaFromElement } from '@/utils/downloadBoletaImage'
+import {
+  BOLETA_WIDTH,
+  BOLETA_LEFT_WIDTH,
+  BOLETA_RIGHT_WIDTH,
+  BOLETA_DEFAULT_HEIGHT,
+  boletaHeightForImage,
+} from '@/constants/boletaDimensions'
 
 interface BoletaListProps {
   boletas: Boleta[]
@@ -191,6 +198,17 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
         console.warn('[Descarga] No hay URL de imagen para las boletas')
       }
 
+      let ticketHeight = BOLETA_DEFAULT_HEIGHT
+      if (imagenDataUrl) {
+        ticketHeight = await new Promise<number>((resolve) => {
+          const img = new Image()
+          img.onload = () =>
+            resolve(boletaHeightForImage(img.naturalWidth, img.naturalHeight))
+          img.onerror = () => resolve(BOLETA_DEFAULT_HEIGHT)
+          img.src = imagenDataUrl
+        })
+      }
+
       // 3) Crear contenedor reutilizable fuera del viewport
       const container = document.createElement('div')
       container.style.cssText = 'position:fixed;top:-2000px;left:0;width:900px;pointer-events:none;'
@@ -267,12 +285,12 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
 
         // Usar la imagen data URL pre-cargada (sin CORS, instantáneo)
         const rightContent = imagenDataUrl
-          ? `<img src="${imagenDataUrl}" style="width:100%;height:100%;object-fit:contain;object-position:left center;" />`
+          ? `<img src="${imagenDataUrl}" style="width:100%;height:100%;object-fit:fill;display:block;" />`
           : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:white;"><div style="text-align:center;color:black;"><p style="font-size:20px;font-weight:700;">${rifaInfo?.nombre || 'Rifa'}</p><p>Boleta #${numPad}</p></div></div>`
 
         container.innerHTML = `
-          <div class="boleta-ticket" style="display:flex;border:2px solid black;overflow:hidden;background:white;width:800px;height:352px;">
-            <div style="flex-shrink:0;padding:8px;display:flex;flex-direction:column;justify-content:space-between;border-right:2px solid black;width:210px;">
+          <div class="boleta-ticket" style="display:flex;border:2px solid black;overflow:hidden;background:white;width:${BOLETA_WIDTH}px;height:${ticketHeight}px;">
+            <div style="flex-shrink:0;padding:8px;display:flex;flex-direction:column;justify-content:space-between;border-right:2px solid black;width:${BOLETA_LEFT_WIDTH}px;height:${ticketHeight}px;">
               <div style="font-size:10px;text-align:center;color:black;font-weight:500;">
                 <p>- Boleta sin pagar no juega</p>
                 <p>${caducidadText}</p>
@@ -290,7 +308,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
                 ${precioNum ? `<div style="text-align:center;font-size:11px;font-weight:700;color:black;">$${precioNum.toLocaleString('es-CO')}</div>` : ''}
               </div>
             </div>
-            <div style="flex-shrink:0;height:100%;width:590px;">
+            <div style="flex-shrink:0;height:100%;width:${BOLETA_RIGHT_WIDTH}px;">
               ${rightContent}
             </div>
           </div>

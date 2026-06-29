@@ -260,7 +260,7 @@ export default function BoletaPrintPage() {
             transform: scale(4.03) !important;
             transform-origin: center center !important;
             width: 800px !important;
-            height: 352px !important;
+            height: auto !important;
           }
           
           img {

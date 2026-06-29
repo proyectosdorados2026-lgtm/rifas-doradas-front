@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import { API_BASE_URL } from '@/config/api'
 import { getStorageImageUrl } from '@/lib/storageImageUrl'
 import GanadorAsignarDirecto from '@/components/ganadores/GanadorAsignarDirecto'
+import {
+  BOLETA_WIDTH,
+  BOLETA_LEFT_WIDTH,
+  BOLETA_RIGHT_WIDTH,
+  BOLETA_DEFAULT_HEIGHT,
+} from '@/constants/boletaDimensions'
 
 interface VentaInfo {
   monto_total: number
@@ -296,9 +302,9 @@ export default function GanadoresPage() {
           return (
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
               {/* Ticket card */}
-              <div className="flex border-2 border-black bg-white mx-auto overflow-hidden" style={{ maxWidth: '800px', height: '352px' }}>
+              <div className="flex border-2 border-black bg-white mx-auto overflow-hidden" style={{ maxWidth: `${BOLETA_WIDTH}px`, height: `${BOLETA_DEFAULT_HEIGHT}px` }}>
                 {/* LEFT SIDE */}
-                <div className="flex-shrink-0 p-2 flex flex-col justify-between border-r-2 border-black" style={{ width: '210px', height: '352px', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                <div className="flex-shrink-0 p-2 flex flex-col justify-between border-r-2 border-black" style={{ width: `${BOLETA_LEFT_WIDTH}px`, height: `${BOLETA_DEFAULT_HEIGHT}px`, fontFamily: 'Arial, Helvetica, sans-serif' }}>
                   {/* Conditions */}
                   <div className="text-[9px] text-black font-semibold leading-snug text-left" style={{ wordSpacing: '3px', letterSpacing: '0.6px' }}>
                     <p>- Boleta sin pagar no juega</p>
@@ -351,9 +357,9 @@ export default function GanadoresPage() {
                 </div>
 
                 {/* RIGHT SIDE — Rifa Image */}
-                <div className="flex-shrink-0 h-full" style={{ width: '590px' }}>
+                <div className="flex-shrink-0 h-full" style={{ width: `${BOLETA_RIGHT_WIDTH}px` }}>
                   {imagen ? (
-                    <img src={imagen} alt={b.rifa_nombre} className="w-full h-full object-contain object-left" crossOrigin="anonymous" />
+                    <img src={imagen} alt={b.rifa_nombre} className="block w-full h-full" style={{ objectFit: 'fill' }} crossOrigin="anonymous" />
                   ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center">
                       <span className="text-slate-400 text-sm">{b.rifa_nombre}</span>
@@ -373,8 +379,8 @@ export default function GanadoresPage() {
           <div className="space-y-6">
             {/* Ticket preview */}
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-              <div className="flex border-2 border-black bg-white mx-auto overflow-hidden" style={{ maxWidth: '800px', height: '352px' }}>
-                <div className="flex-shrink-0 p-2 flex flex-col justify-between border-r-2 border-black" style={{ width: '210px', height: '352px', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+              <div className="flex border-2 border-black bg-white mx-auto overflow-hidden" style={{ maxWidth: `${BOLETA_WIDTH}px`, height: `${BOLETA_DEFAULT_HEIGHT}px` }}>
+                <div className="flex-shrink-0 p-2 flex flex-col justify-between border-r-2 border-black" style={{ width: `${BOLETA_LEFT_WIDTH}px`, height: `${BOLETA_DEFAULT_HEIGHT}px`, fontFamily: 'Arial, Helvetica, sans-serif' }}>
                   <div className="text-[9px] text-black font-semibold leading-snug text-left" style={{ wordSpacing: '3px', letterSpacing: '0.6px' }}>
                     <p>- Boleta sin pagar no juega</p>
                     <p>- Válida hasta el día del sorteo</p>
@@ -392,9 +398,9 @@ export default function GanadoresPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0 h-full" style={{ width: '590px' }}>
+                <div className="flex-shrink-0 h-full" style={{ width: `${BOLETA_RIGHT_WIDTH}px` }}>
                   {imagen ? (
-                    <img src={imagen} alt={b.rifa_nombre} className="w-full h-full object-contain object-left" crossOrigin="anonymous" />
+                    <img src={imagen} alt={b.rifa_nombre} className="block w-full h-full" style={{ objectFit: 'fill' }} crossOrigin="anonymous" />
                   ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center">
                       <span className="text-slate-400 text-sm">{b.rifa_nombre}</span>
