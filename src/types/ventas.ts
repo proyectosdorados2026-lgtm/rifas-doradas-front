@@ -36,6 +36,20 @@ export interface Cliente {
   identificacion?: string
 }
 
+export interface ClienteBoletaHistorial {
+  numero: number
+  estado: string
+  rifa_nombre: string
+  rifa_estado: string
+  rifa_id?: string
+}
+
+export interface ClienteSimilar extends Cliente {
+  id: string
+  score?: number
+  boletas: ClienteBoletaHistorial[]
+}
+
 export interface BoletaEnCarrito {
   id: string
   numero: number

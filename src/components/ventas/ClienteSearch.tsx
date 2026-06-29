@@ -1,19 +1,37 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Cliente } from '@/types/ventas'
+import { Cliente, ClienteSimilar } from '@/types/ventas'
 import { ventasApi } from '@/lib/ventasApi'
 
 interface ClienteSearchProps {
   onClienteSelected: (cliente: Cliente) => void
   onClienteCreated?: (cliente: Cliente) => void
   permitirCrear?: boolean
+  rifaId?: string
+}
+
+const ESTADO_BOLETA_STYLES: Record<string, string> = {
+  PAGADA: 'bg-green-100 text-green-800',
+  RESERVADA: 'bg-amber-100 text-amber-800',
+  ABONADA: 'bg-blue-100 text-blue-800',
+  ANULADA: 'bg-red-100 text-red-800',
+  DISPONIBLE: 'bg-slate-100 text-slate-700'
+}
+
+function formatNumeroBoleta(numero: number) {
+  return String(numero).padStart(4, '0')
+}
+
+function getEstadoBoletaStyle(estado: string) {
+  return ESTADO_BOLETA_STYLES[estado] || 'bg-slate-100 text-slate-700'
 }
 
 export default function ClienteSearch({
   onClienteSelected,
   onClienteCreated,
-  permitirCrear = true
+  permitirCrear = true,
+  rifaId
 }: ClienteSearchProps) {
   const [modo, setModo] = useState<'BUSCAR' | 'NUEVO'>('BUSCAR')
   const [tipoBusqueda, setTipoBusqueda] = useState<'CEDULA' | 'GENERAL'>('CEDULA')
@@ -32,6 +50,10 @@ export default function ClienteSearch({
   const [clienteCreadoExitosamente, setClienteCreadoExitosamente] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [generandoId, setGenerandoId] = useState(false)
+  const [similares, setSimilares] = useState<ClienteSimilar[]>([])
+  const [loadingSimilares, setLoadingSimilares] = useState(false)
+  const [similaresOcultos, setSimilaresOcultos] = useState(false)
+  const [terminoSimilar, setTerminoSimilar] = useState('')
 
 
   useEffect(() => {
@@ -39,6 +61,48 @@ export default function ClienteSearch({
     setModo('BUSCAR')
   }
 }, [permitirCrear])
+
+  useEffect(() => {
+    if (modo !== 'NUEVO') {
+      setSimilares([])
+      setSimilaresOcultos(false)
+      setTerminoSimilar('')
+      return
+    }
+
+    const nombre = clienteNuevo.nombre.trim()
+    const identificacion = clienteNuevo.identificacion.trim()
+    const termino = identificacion.length >= 5 ? identificacion : nombre
+
+    if (similaresOcultos || termino.length < 3) {
+      setSimilares([])
+      setLoadingSimilares(false)
+      setTerminoSimilar(termino)
+      return
+    }
+
+    setTerminoSimilar(termino)
+    setLoadingSimilares(true)
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await ventasApi.buscarClientesSimilares(termino, rifaId)
+        setSimilares(response.data || [])
+      } catch {
+        setSimilares([])
+      } finally {
+        setLoadingSimilares(false)
+      }
+    }, 350)
+
+    return () => clearTimeout(timeoutId)
+  }, [
+    modo,
+    clienteNuevo.nombre,
+    clienteNuevo.identificacion,
+    similaresOcultos,
+    rifaId
+  ])
 
   // Buscar clientes cuando cambia la búsqueda
   useEffect(() => {
@@ -148,8 +212,125 @@ export default function ClienteSearch({
     setBusqueda('')
     setCedulaBusqueda('')
     setResultados([])
-    setClienteCreadoExitosamente(false) // Resetear estado de éxito
+    setSimilares([])
+    setSimilaresOcultos(false)
+    setClienteCreadoExitosamente(false)
     setError(null)
+  }
+
+  const usarClienteSimilar = (cliente: ClienteSimilar) => {
+    seleccionarCliente({
+      id: cliente.id,
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+      email: cliente.email,
+      direccion: cliente.direccion,
+      identificacion: cliente.identificacion
+    })
+  }
+
+  const renderPanelSimilares = () => {
+    if (modo !== 'NUEVO' || similaresOcultos || terminoSimilar.length < 3) {
+      return null
+    }
+
+    if (loadingSimilares) {
+      return (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Buscando clientes similares...
+        </div>
+      )
+    }
+
+    if (similares.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-amber-950">
+              ¿Ya existe este cliente?
+            </p>
+            <p className="text-sm text-amber-900 mt-1">
+              Encontramos {similares.length} cliente{similares.length !== 1 ? 's' : ''} parecido{similares.length !== 1 ? 's' : ''}. Revisa cédula, boleta y estado antes de crear uno nuevo.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSimilaresOcultos(true)}
+            className="text-xs font-medium text-amber-800 hover:text-amber-950 whitespace-nowrap"
+          >
+            Crear nuevo igual
+          </button>
+        </div>
+
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {similares.map((cliente) => (
+            <div
+              key={cliente.id}
+              className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-900">{cliente.nombre}</div>
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                    {cliente.identificacion && (
+                      <span>C.C: {cliente.identificacion}</span>
+                    )}
+                    <span>{cliente.telefono}</span>
+                    {cliente.email && <span>{cliente.email}</span>}
+                  </div>
+
+                  {cliente.boletas?.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Historial de boletas
+                      </p>
+                      {cliente.boletas.map((boleta, index) => (
+                        <div
+                          key={`${cliente.id}-${boleta.rifa_id || boleta.rifa_nombre}-${boleta.numero}-${index}`}
+                          className="flex flex-wrap items-center gap-2 text-sm"
+                        >
+                          <span className="font-medium text-slate-800">
+                            #{formatNumeroBoleta(boleta.numero)}
+                          </span>
+                          <span className="text-slate-500">·</span>
+                          <span className="text-slate-700">{boleta.rifa_nombre}</span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${getEstadoBoletaStyle(boleta.estado)}`}
+                          >
+                            {boleta.estado}
+                          </span>
+                          {boleta.rifa_estado === 'TERMINADA' && (
+                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">
+                              Rifa terminada
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Sin boletas registradas en rifas anteriores.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => usarClienteSimilar(cliente)}
+                  className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Usar este cliente
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -176,7 +357,9 @@ export default function ClienteSearch({
         <button
           onClick={() => {
             setModo('NUEVO')
-            setClienteCreadoExitosamente(false) // Resetear estado
+            setClienteCreadoExitosamente(false)
+            setSimilares([])
+            setSimilaresOcultos(false)
             setError(null)
           }}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
@@ -345,19 +528,29 @@ export default function ClienteSearch({
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            Al escribir el nombre o la cédula, mostraremos clientes similares con su historial de boletas para evitar duplicados.
+          </div>
+
           {/* Formulario de nuevo cliente */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-bold text-black mb-2">
                 Nombre completo *
               </label>
               <input
                 type="text"
                 value={clienteNuevo.nombre}
-                onChange={(e) => setClienteNuevo({ ...clienteNuevo, nombre: e.target.value })}
+                onChange={(e) => {
+                  setSimilaresOcultos(false)
+                  setClienteNuevo({ ...clienteNuevo, nombre: e.target.value })
+                }}
                 className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
                 placeholder="Juan Pérez"
               />
+              <div className="mt-3">
+                {renderPanelSimilares()}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-bold text-black mb-2">
@@ -391,7 +584,10 @@ export default function ClienteSearch({
                 <input
                   type="text"
                   value={clienteNuevo.identificacion}
-                  onChange={(e) => setClienteNuevo({ ...clienteNuevo, identificacion: e.target.value })}
+                  onChange={(e) => {
+                    setSimilaresOcultos(false)
+                    setClienteNuevo({ ...clienteNuevo, identificacion: e.target.value })
+                  }}
                   className="flex-1 px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
                   placeholder="123456789"
                 />

@@ -398,6 +398,7 @@ export default function VentasPage() {
             {pasoActual === 'datos-cliente' && (
               <div className="space-y-6">
                 <ClienteSearch
+                 rifaId={rifaSeleccionada?.id}
                  onClienteSelected={(clienteSeleccionado) => {
                  console.log('Cliente seleccionado:', clienteSeleccionado)
                  setCliente(clienteSeleccionado)

@@ -4,6 +4,7 @@ import {
   BoletaBloqueada,
   BloqueoVerificacion,
   Cliente,
+  ClienteSimilar,
   VentaRequest,
   VentaResponse,
   RifaStats,
@@ -177,6 +178,17 @@ class VentasApiService {
     `/clientes?search=${encodeURIComponent(query)}`
   )
 }
+
+  async buscarClientesSimilares(query: string, rifaId?: string) {
+    const params = new URLSearchParams({
+      q: query,
+      limit: '8'
+    })
+    if (rifaId) {
+      params.set('rifa_id', rifaId)
+    }
+    return this.request<ClienteSimilar[]>(`/clientes/similares?${params.toString()}`)
+  }
 
   async buscarClientePorCedula(cedula: string) {
     return this.request<Cliente>(
