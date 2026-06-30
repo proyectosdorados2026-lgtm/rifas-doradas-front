@@ -9,6 +9,7 @@ import { getMediosDePagoTexto } from '@/config/paymentInfo'
 
 interface ClienteListProps {
   clientes: Cliente[]
+  rifaActual?: { id: string; nombre: string; estado: string } | null
   pagination: {
     page: number
     limit: number
@@ -57,11 +58,12 @@ async function generarWhatsAppRecordatorioConDetalle(cliente: Cliente): Promise<
   try {
     const response = await clienteApi.getClienteDetalle(cliente.id)
     const { rifas, resumen } = response.data
+    const rifasActuales = rifas.filter((rifa: RifaConBoletas) => rifa.rifa_estado === 'ACTIVA')
 
     let msg = `🔔 *Recordatorio de pago pendiente*\n\nHola *${nombre}*, le recordamos que tiene boletas pendientes por pagar:\n\n`
 
-    // Detalle por rifa
-    rifas.forEach((rifa: RifaConBoletas) => {
+    // Detalle por rifa actual
+    rifasActuales.forEach((rifa: RifaConBoletas) => {
       const boletasPendientes = rifa.boletas.filter(b => b.estado === 'RESERVADA' || b.estado === 'ABONADA')
       if (boletasPendientes.length === 0) return
 
@@ -105,6 +107,7 @@ async function generarWhatsAppRecordatorioConDetalle(cliente: Cliente): Promise<
 
 export default function ClienteList({
   clientes,
+  rifaActual,
   pagination,
   onEdit,
   onDelete,
@@ -157,14 +160,25 @@ export default function ClienteList({
 
   const filters = [
     { key: 'todos', label: 'Todos', count: pagination.total, color: 'bg-slate-900', textColor: 'text-white' },
-    { key: 'con_boletas', label: 'Con Boletas', count: summary.conBoletas, color: 'bg-indigo-600', textColor: 'text-white' },
-    { key: 'pagadas', label: 'Con Pagadas', count: summary.pagadas, color: 'bg-green-600', textColor: 'text-white' },
-    { key: 'reservadas', label: 'Con Reservadas', count: summary.reservadas, color: 'bg-yellow-500', textColor: 'text-white' },
-    { key: 'abonadas', label: 'Con Abonadas', count: summary.abonadas, color: 'bg-blue-600', textColor: 'text-white' },
+    { key: 'con_boletas', label: 'Con Boletas (actual)', count: summary.conBoletas, color: 'bg-indigo-600', textColor: 'text-white' },
+    { key: 'pagadas', label: 'Pagadas (actual)', count: summary.pagadas, color: 'bg-green-600', textColor: 'text-white' },
+    { key: 'reservadas', label: 'Reservadas (actual)', count: summary.reservadas, color: 'bg-yellow-500', textColor: 'text-white' },
+    { key: 'abonadas', label: 'Abonadas (actual)', count: summary.abonadas, color: 'bg-blue-600', textColor: 'text-white' },
   ]
 
   return (
     <div className="space-y-6">
+      {rifaActual && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm font-bold text-green-900">
+            Rifa actual: {rifaActual.nombre}
+          </p>
+          <p className="text-sm text-green-800 mt-1">
+            La lista muestra solo boletas, deudas y estados de la rifa activa. Las rifas anteriores están en el detalle de cada cliente.
+          </p>
+        </div>
+      )}
+
       {/* Filter Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {filters.map((f) => (
@@ -222,9 +236,9 @@ export default function ClienteList({
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Cliente</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Teléfono</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Identificación</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Boletas</th>
-                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Estado Boletas</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase">Deuda</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Boletas (actual)</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Estado (actual)</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase">Deuda (actual)</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase">Acciones</th>
                   </tr>
                 </thead>

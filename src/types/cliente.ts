@@ -33,6 +33,11 @@ export interface ClienteUpdateRequest {
 export interface ClienteListResponse {
   success: boolean
   data: Cliente[]
+  rifa_actual?: {
+    id: string
+    nombre: string
+    estado: string
+  } | null
   pagination: {
     page: number
     limit: number
@@ -124,8 +129,15 @@ export interface ClienteDetalleResponse {
   success: boolean
   data: {
     cliente: Cliente
+    rifa_actual?: {
+      id: string
+      nombre: string
+      estado: string
+    } | null
     resumen: ClienteDetalleResumen
     rifas: RifaConBoletas[]
+    resumen_pasadas?: ClienteDetalleResumen
+    rifas_pasadas?: RifaConBoletas[]
     abonos: AbonoHistorial[]
   }
 }

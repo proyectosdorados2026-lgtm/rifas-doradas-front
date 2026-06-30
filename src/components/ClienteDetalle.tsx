@@ -53,11 +53,16 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
   const [error, setError] = useState<string | null>(null)
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [resumen, setResumen] = useState<ClienteDetalleResumen | null>(null)
+  const [resumenPasadas, setResumenPasadas] = useState<ClienteDetalleResumen | null>(null)
   const [rifas, setRifas] = useState<RifaConBoletas[]>([])
+  const [rifasPasadas, setRifasPasadas] = useState<RifaConBoletas[]>([])
+  const [rifaActual, setRifaActual] = useState<{ id: string; nombre: string; estado: string } | null>(null)
   const [abonos, setAbonos] = useState<AbonoHistorial[]>([])
   const [filtroEstado, setFiltroEstado] = useState<FilterEstado>('TODAS')
   const [activeTab, setActiveTab] = useState<'boletas' | 'abonos' | 'movimientos'>('boletas')
   const [expandedRifas, setExpandedRifas] = useState<Set<string>>(new Set())
+  const [expandedRifasPasadas, setExpandedRifasPasadas] = useState<Set<string>>(new Set())
+  const [historialAbierto, setHistorialAbierto] = useState(false)
   const [canVerHistorial, setCanVerHistorial] = useState(false)
 
   useEffect(() => {
@@ -82,10 +87,13 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
       const response = await clienteApi.getClienteDetalle(clienteId)
       setCliente(response.data.cliente)
       setResumen(response.data.resumen)
+      setResumenPasadas(response.data.resumen_pasadas || null)
       setRifas(response.data.rifas)
+      setRifasPasadas(response.data.rifas_pasadas || [])
+      setRifaActual(response.data.rifa_actual || null)
       setAbonos(response.data.abonos)
-      // Expand all rifas by default
       setExpandedRifas(new Set(response.data.rifas.map((r) => r.rifa_id)))
+      setHistorialAbierto((response.data.rifas_pasadas || []).length > 0)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar detalle del cliente')
@@ -118,6 +126,25 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
       .filter((r) => r.boletas.length > 0)
   }
 
+  const toggleRifaPasada = (rifaId: string) => {
+    setExpandedRifasPasadas((prev) => {
+      const next = new Set(prev)
+      if (next.has(rifaId)) next.delete(rifaId)
+      else next.add(rifaId)
+      return next
+    })
+  }
+
+  const getFilteredRifasPasadas = (): RifaConBoletas[] => {
+    if (filtroEstado === 'TODAS') return rifasPasadas
+    return rifasPasadas
+      .map((r) => ({
+        ...r,
+        boletas: r.boletas.filter((b) => b.estado === filtroEstado),
+      }))
+      .filter((r) => r.boletas.length > 0)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -143,6 +170,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
   if (!cliente || !resumen) return null
 
   const filteredRifas = getFilteredRifas()
+  const filteredRifasPasadas = getFilteredRifasPasadas()
 
   // ─── Genera link de WhatsApp con recordatorio personalizado ────────
   const generarWhatsAppRecordatorio = (
@@ -225,10 +253,21 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
         </div>
       </div>
 
+      {rifaActual && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm font-bold text-green-900">
+            Rifa actual: {rifaActual.nombre}
+          </p>
+          <p className="text-sm text-green-800 mt-1">
+            Los totales y boletas principales corresponden solo a la rifa activa.
+          </p>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <KpiCard
-          label="Total Boletas"
+          label="Boletas (actual)"
           value={resumen.total_boletas}
           color="bg-slate-900"
           textColor="text-white"
@@ -332,7 +371,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
               : 'border-transparent text-slate-500 hover:text-black'
           }`}
         >
-          📋 Boletas por Rifa ({resumen.total_boletas})
+          📋 Boletas rifa actual ({resumen.total_boletas})
         </button>
         <button
           onClick={() => setActiveTab('abonos')}
@@ -361,13 +400,19 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
       {/* Tab Content */}
       {activeTab === 'boletas' && (
         <div className="space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <h3 className="text-sm font-bold text-slate-900">
+              Boletas de la rifa actual
+            </h3>
+          </div>
+
           {filteredRifas.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
               <div className="text-4xl mb-3">🎫</div>
               <p className="text-slate-500 font-medium">
                 {filtroEstado === 'TODAS'
-                  ? 'Este cliente no tiene boletas asociadas'
-                  : `No hay boletas con estado "${filtroEstado}"`}
+                  ? 'Este cliente no tiene boletas en la rifa actual'
+                  : `No hay boletas con estado "${filtroEstado}" en la rifa actual`}
               </p>
             </div>
           ) : (
@@ -381,6 +426,63 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
                 filtroEstado={filtroEstado}
               />
             ))
+          )}
+
+          {rifasPasadas.length > 0 && (
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <button
+                type="button"
+                onClick={() => setHistorialAbierto((prev) => !prev)}
+                className="w-full flex items-center justify-between rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-left"
+              >
+                <div>
+                  <h3 className="text-sm font-bold text-violet-950">
+                    Historial de rifas pasadas
+                  </h3>
+                  <p className="text-sm text-violet-800 mt-1">
+                    {rifasPasadas.length} rifa{rifasPasadas.length !== 1 ? 's' : ''} · {resumenPasadas?.total_boletas || 0} boleta{(resumenPasadas?.total_boletas || 0) !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <svg
+                  className={`w-5 h-5 text-violet-500 transition-transform ${historialAbierto ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {historialAbierto && (
+                <div className="space-y-4">
+                  {resumenPasadas && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <KpiCard label="Boletas pasadas" value={resumenPasadas.total_boletas} color="bg-violet-100" textColor="text-violet-900" small />
+                      <KpiCard label="Pagadas" value={resumenPasadas.pagadas} color="bg-green-100" textColor="text-green-800" small />
+                      <KpiCard label="Reservadas" value={resumenPasadas.reservadas} color="bg-yellow-100" textColor="text-yellow-800" small />
+                      <KpiCard label="Abonadas" value={resumenPasadas.abonadas} color="bg-blue-100" textColor="text-blue-800" small />
+                    </div>
+                  )}
+
+                  {filteredRifasPasadas.length === 0 ? (
+                    <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+                      No hay boletas pasadas con el filtro seleccionado.
+                    </div>
+                  ) : (
+                    filteredRifasPasadas.map((rifa) => (
+                      <RifaAccordion
+                        key={`pasada-${rifa.rifa_id}`}
+                        rifa={rifa}
+                        filteredBoletas={getFilteredBoletas(rifa.boletas)}
+                        expanded={expandedRifasPasadas.has(rifa.rifa_id)}
+                        onToggle={() => toggleRifaPasada(rifa.rifa_id)}
+                        filtroEstado={filtroEstado}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

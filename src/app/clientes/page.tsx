@@ -19,6 +19,7 @@ export default function ClientesPage() {
   const [viewingClienteId, setViewingClienteId] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [currentSearch, setCurrentSearch] = useState('')
+  const [rifaActual, setRifaActual] = useState<{ id: string; nombre: string; estado: string } | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -41,6 +42,7 @@ export default function ClientesPage() {
       setLoading(true)
       const response: ClienteListResponse = await clienteApi.getClientes(page, pagination.limit, search)
       setClientes(response.data)
+      setRifaActual(response.rifa_actual || null)
       setPagination(response.pagination)
       setError(null)
     } catch (err) {
@@ -192,6 +194,7 @@ export default function ClientesPage() {
         {viewMode === 'list' && (
           <ClienteList
             clientes={getFilteredClientes()}
+            rifaActual={rifaActual}
             pagination={pagination}
             onEdit={handleEditCliente}
             onDelete={handleDeleteCliente}
