@@ -60,6 +60,7 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
   const [personFilter, setPersonFilter] = useState<PersonFilter>({ tipo: 'TODOS', vendedorId: null });
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Construir extraFilters para el backend (solo aplica a SUPER_ADMIN + scope global)
   const extraFilters = (() => {
@@ -74,20 +75,38 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
   useEffect(() => {
     if (!selectedRifa) return;
 
+    let cancelado = false;
+
     const fetchData = async () => {
       setLoading(true);
-      const result = await getReporteRifa(
-        selectedRifa,
-        fechaInicio,
-        fechaFin,
-        scope,
-        extraFilters
-      );
-      setData(result);
-      setLoading(false);
+      setError(null);
+      try {
+        const result = await getReporteRifa(
+          selectedRifa,
+          fechaInicio,
+          fechaFin,
+          scope,
+          extraFilters
+        );
+        if (!cancelado) setData(result);
+      } catch (err: any) {
+        if (!cancelado) {
+          const msg =
+            err?.code === 'ECONNABORTED'
+              ? 'El servidor tardó demasiado en responder. Intenta de nuevo.'
+              : err?.response?.data?.message || err?.message || 'No se pudo cargar el reporte. Intenta de nuevo.';
+          setError(msg);
+        }
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
     };
 
     fetchData();
+
+    return () => {
+      cancelado = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRifa, fechaInicio, fechaFin, scope, personFilter.tipo, personFilter.vendedorId]);
 
@@ -133,7 +152,28 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
           setPersonFilter={setPersonFilter as any}
         />
 
-        {loading && !data ? (
+        {error && !loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="text-red-600 font-medium text-center max-w-md">{error}</div>
+            <button
+              onClick={() => {
+                setFechaInicio((v) => v);
+                setSelectedRifa((v) => v);
+                setError(null);
+                setLoading(true);
+                getReporteRifa(selectedRifa!, fechaInicio, fechaFin, scope, extraFilters)
+                  .then((r) => setData(r))
+                  .catch((err: any) =>
+                    setError(err?.response?.data?.message || err?.message || 'No se pudo cargar el reporte.')
+                  )
+                  .finally(() => setLoading(false));
+              }}
+              className="px-5 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : loading && !data ? (
           <div className="flex justify-center items-center py-20">
             <div className="text-slate-400 animate-pulse font-light text-lg">Procesando métricas...</div>
           </div>

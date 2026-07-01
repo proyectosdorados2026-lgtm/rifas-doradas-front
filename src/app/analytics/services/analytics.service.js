@@ -39,6 +39,7 @@ export const getReporteRifa = async (
     `${buildBase(scope)}/${rifaId}`,
     {
       params,
+      timeout: 30000,
       headers: token
         ? { Authorization: `Bearer ${token}` }
         : {}
@@ -86,6 +87,7 @@ export const getVentasGeneral = async (
     `${buildBase(scope)}/${rifaId}/ventas`,
     {
       params,
+      timeout: 30000,
       headers: token
         ? { Authorization: `Bearer ${token}` }
         : {}

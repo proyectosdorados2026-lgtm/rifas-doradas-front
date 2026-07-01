@@ -122,11 +122,11 @@ export interface BoletasDisponiblesResponse {
 
 export interface RifaStats {
   total_boletas: number
-  boletas_vendidas: number
   boletas_disponibles: number
+  boletas_pagadas: number
+  boletas_reservadas: number
+  boletas_abonadas: number
   boletas_bloqueadas: number
-  total_ventas: number
-  total_recaudado: number
 }
 
 export interface ApiResponse<T> {

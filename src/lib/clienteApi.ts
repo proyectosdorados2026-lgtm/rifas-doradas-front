@@ -20,6 +20,25 @@ class ClienteApiService {
     }
   }
 
+  private async fetchWithTimeout(
+    input: string,
+    init: RequestInit = {},
+    timeoutMs = 30000
+  ): Promise<Response> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      return await fetch(input, { ...init, signal: controller.signal })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new Error('El servidor tardó demasiado en responder. Intenta de nuevo.')
+      }
+      throw err
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     const data = await response.json()
     
@@ -58,7 +77,7 @@ class ClienteApiService {
       ...(search && { search })
     })
     
-    const response = await fetch(`${API_BASE_URL}/api/clientes?${params}`, {
+    const response = await this.fetchWithTimeout(`${API_BASE_URL}/api/clientes?${params}`, {
       headers: this.getAuthHeaders()
     })
     return this.handleResponse<ClienteListResponse>(response)
@@ -96,7 +115,7 @@ class ClienteApiService {
   }
 
   async getClienteDetalle(id: string): Promise<ClienteDetalleResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/clientes/${id}/detalle`, {
+    const response = await this.fetchWithTimeout(`${API_BASE_URL}/api/clientes/${id}/detalle`, {
       headers: this.getAuthHeaders()
     })
     return this.handleResponse<ClienteDetalleResponse>(response)

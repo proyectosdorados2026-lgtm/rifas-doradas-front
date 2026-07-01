@@ -51,27 +51,31 @@ export default function RifaList({
   // Estado para almacenar conteos de boletas por rifa (disponibles y pagadas)
   const [boletasConteoPorRifa, setBoletasConteoPorRifa] = useState<Record<string, { disponibles?: number; pagadas?: number }>>({})
 
-  // Cargar boletas disponibles para cada rifa
+  // Cargar conteos de boletas por rifa usando estadísticas agregadas del backend
+  // (evita descargar todas las boletas de cada rifa solo para contarlas)
   const cargarBoletasDisponibles = useCallback(async () => {
+    const resultados = await Promise.all(
+      rifas.map(async (rifa) => {
+        try {
+          const response = await ventasApi.getRifaStats(rifa.id)
+          const stats = response.data
+          return {
+            id: rifa.id,
+            conteo: { disponibles: stats.boletas_disponibles, pagadas: stats.boletas_pagadas }
+          }
+        } catch (error) {
+          console.error(`Error cargando estadísticas para rifa ${rifa.id}:`, error)
+          // Si hay error, usar los valores del servidor como fallback
+          return {
+            id: rifa.id,
+            conteo: { disponibles: rifa.boletas_disponibles, pagadas: rifa.boletas_vendidas }
+          }
+        }
+      })
+    )
+
     const conteos: Record<string, { disponibles?: number; pagadas?: number }> = {}
-
-    for (const rifa of rifas) {
-      try {
-        const response = await ventasApi.getBoletasDisponibles(rifa.id)
-        const boletas = response.data || []
-
-        // Contar boletas por estado
-        const disponibles = boletas.filter((b: any) => b.estado === 'DISPONIBLE').length
-        const pagadas = boletas.filter((b: any) => b.estado === 'PAGADA').length
-
-        conteos[rifa.id] = { disponibles, pagadas }
-      } catch (error) {
-        console.error(`Error cargando boletas para rifa ${rifa.id}:`, error)
-        // Si hay error, usar los valores del servidor como fallback
-        conteos[rifa.id] = { disponibles: rifa.boletas_disponibles, pagadas: rifa.boletas_vendidas }
-      }
-    }
-
+    for (const r of resultados) conteos[r.id] = r.conteo
     setBoletasConteoPorRifa(conteos)
   }, [rifas])
 
