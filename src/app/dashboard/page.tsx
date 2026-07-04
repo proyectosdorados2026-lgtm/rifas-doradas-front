@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const canUseVentasPublicas = ['SUPER_ADMIN', 'ADMIN'].includes(normalizedRole || '')
   const canUseVendedoresStats = normalizedRole === 'SUPER_ADMIN'
   const canUseHistorial = normalizedRole === 'SUPER_ADMIN'
+  const canUseSuperadminVentas = normalizedRole === 'SUPER_ADMIN'
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -314,6 +315,35 @@ export default function DashboardPage() {
                   <h4 className="text-lg font-semibold mb-1">Seguimiento Clientes</h4>
                   <p className="text-teal-100 text-sm leading-relaxed">Boletas, abonos, saldos y recordatorios por cliente</p>
                   <div className="mt-4 flex items-center text-teal-200 text-xs font-medium group-hover:text-white transition-colors">
+                    Ir al módulo
+                    <svg className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                  </div>
+                </div>
+              </a>
+            )}
+
+            {/* Edición de Ventas (solo SUPER_ADMIN) */}
+            {canUseSuperadminVentas && (
+              <a
+                href="/superadmin-ventas"
+                className="group relative bg-gradient-to-br from-rose-600 to-red-800 p-6 rounded-2xl text-white overflow-hidden card-hover shadow-lg shadow-red-900/20"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/10">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm text-[11px] font-semibold border border-white/10">
+                      Super Admin
+                    </span>
+                  </div>
+                  <h4 className="text-lg font-semibold mb-1">Edición de Ventas</h4>
+                  <p className="text-rose-100 text-sm leading-relaxed">Editar abonos, métodos de pago, liberar boletas, estados y clientes</p>
+                  <div className="mt-4 flex items-center text-rose-200 text-xs font-medium group-hover:text-white transition-colors">
                     Ir al módulo
                     <svg className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                   </div>
