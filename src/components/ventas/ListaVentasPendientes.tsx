@@ -24,10 +24,18 @@ interface VentaPendiente {
 interface Props {
   clienteId?: string
   ventaIdDirecta?: string  // Si se pasa, ir directamente a RegistrarAbono sin listar
+  boletaDestacada?: number   // Resaltar esta boleta en la lista (búsqueda por #)
+  ventaDestacadaId?: string  // Resaltar la venta que contiene la boleta buscada
   onAbonoFinalizado?: () => void
 }
 
-export default function ListaVentasPendientes({ clienteId, ventaIdDirecta, onAbonoFinalizado }: Props) {
+export default function ListaVentasPendientes({
+  clienteId,
+  ventaIdDirecta,
+  boletaDestacada,
+  ventaDestacadaId,
+  onAbonoFinalizado,
+}: Props) {
   const [ventas, setVentas] = useState<VentaPendiente[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,11 +128,22 @@ export default function ListaVentasPendientes({ clienteId, ventaIdDirecta, onAbo
           </h2>
 
           <div className="space-y-4">
-            {ventas.map((venta) => (
+            {ventas.map((venta) => {
+              const esVentaDestacada = ventaDestacadaId != null && String(venta.id) === ventaDestacadaId
+              return (
               <div
                 key={venta.id}
-                className="border border-slate-200 rounded-lg p-4"
+                className={`border rounded-lg p-4 ${
+                  esVentaDestacada
+                    ? 'border-blue-400 bg-blue-50/40 ring-1 ring-blue-200'
+                    : 'border-slate-200'
+                }`}
               >
+                {esVentaDestacada && (
+                  <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">
+                    ⭐ Venta con la boleta buscada
+                  </p>
+                )}
                 <div className="flex justify-between items-start">
                   <div className="space-y-1 flex-1">
                     {/* Rifa nombre si está disponible */}
@@ -137,24 +156,29 @@ export default function ListaVentasPendientes({ clienteId, ventaIdDirecta, onAbo
                     {/* Boletas */}
                     {venta.boletas && venta.boletas.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 my-1.5">
-                        {venta.boletas.map((b) => (
+                        {venta.boletas.map((b) => {
+                          const esBoletaBuscada = boletaDestacada != null && b.numero === boletaDestacada
+                          return (
                           <span
                             key={b.id}
                             className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                              b.estado === 'PAGADA' ? 'bg-green-100 text-green-700' :
-                              b.estado === 'ABONADA' ? 'bg-yellow-100 text-yellow-700' :
-                              b.estado === 'RESERVADA' ? 'bg-blue-100 text-blue-700' :
-                              'bg-slate-100 text-slate-600'
+                              esBoletaBuscada
+                                ? 'bg-blue-600 text-white ring-2 ring-blue-300'
+                                : b.estado === 'PAGADA' ? 'bg-green-100 text-green-700' :
+                                b.estado === 'ABONADA' ? 'bg-yellow-100 text-yellow-700' :
+                                b.estado === 'RESERVADA' ? 'bg-blue-100 text-blue-700' :
+                                'bg-slate-100 text-slate-600'
                             }`}
                           >
                             🎫 #{b.numero.toString().padStart(4, '0')}
+                            {esBoletaBuscada && <span>← buscada</span>}
                             <span className="opacity-70">
                               {b.estado === 'PAGADA' ? '✅' :
                                b.estado === 'ABONADA' ? '💰' :
                                b.estado === 'RESERVADA' ? '🔒' : ''}
                             </span>
                           </span>
-                        ))}
+                        )})}
                       </div>
                     )}
 
@@ -183,7 +207,7 @@ export default function ListaVentasPendientes({ clienteId, ventaIdDirecta, onAbo
                   </button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}
