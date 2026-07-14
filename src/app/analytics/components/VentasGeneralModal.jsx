@@ -2,9 +2,22 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { getVentasGeneral } from '../services/analytics.service';
 import { normalizarTelefono } from '@/utils/telefono';
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros';
 
 // ─── Helpers ───────────────────────────────────────────
 const fmt = (n) => `$${Number(n).toLocaleString('es-CO')}`;
+
+/** Etiquetas pacha por boleta: ["#0004 · #1234"] */
+function labelsBoletasVenta(ventaOrAbono) {
+  const boletas = ventaOrAbono?.boletas;
+  if (Array.isArray(boletas) && boletas.length > 0) {
+    return boletas.map((b) => formatBoletaNumeros(b.numeros, b.numero));
+  }
+  // Fallback: numeros_boletas ya incluye ambos números de cada pacha
+  return (ventaOrAbono?.numeros_boletas || []).map(
+    (n) => `#${String(n).padStart(4, '0')}`
+  );
+}
 const fmtDate = (d) => {
   if (!d) return '—';
   const date = new Date(d);
@@ -61,7 +74,7 @@ function VentaDetalleExpandido({ venta }) {
       RESERVA: 'Reserva',
       SIN_PAGO: 'Sin Pago',
     };
-    const boletas = (venta.numeros_boletas || []).map((num) => `#${String(num).padStart(4, '0')}`).join(', ');
+    const boletas = labelsBoletasVenta(venta).join(', ');
     const fecha = fmtDate(venta.created_at);
     const win = window.open('', '_blank', 'width=420,height=700');
     if (!win) return;
@@ -131,7 +144,7 @@ function VentaDetalleExpandido({ venta }) {
   const generarWhatsAppLink = () => {
     const telCompleto = normalizarTelefono(venta.cliente_telefono);
     if (!telCompleto || telCompleto.length < 7) return null;
-    const boletas = (venta.numeros_boletas || []).map((n) => `#${String(n).padStart(4, '0')}`).join(', ');
+    const boletas = labelsBoletasVenta(venta).join(', ');
     const tipoLabel = { PAGO_TOTAL: 'Pago Total', ABONO: 'Abono Parcial', RESERVA: 'Reserva', SIN_PAGO: 'Sin Pago' };
 
     let msg = `🧾 *Comprobante de Venta*\n\n`;
@@ -236,12 +249,12 @@ function VentaDetalleExpandido({ venta }) {
                 <span className="text-base">🎟️</span> Boletas ({venta.cantidad_boletas})
               </h4>
               <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                {venta.numeros_boletas && venta.numeros_boletas.map((num, i) => (
+                {labelsBoletasVenta(venta).map((label, i) => (
                   <span 
                     key={i} 
                     className="inline-flex items-center justify-center px-2 py-1 text-xs font-mono font-bold bg-blue-50 text-blue-700 rounded-md border border-blue-200"
                   >
-                    #{String(num).padStart(4, '0')}
+                    {label}
                   </span>
                 ))}
               </div>
@@ -290,7 +303,7 @@ function AbonoDetalleExpandido({ abono }) {
   const generarWhatsAppLink = () => {
     const telCompleto = normalizarTelefono(abono.cliente_telefono);
     if (!telCompleto || telCompleto.length < 7) return null;
-    const boletas = (abono.numeros_boletas || []).map((n) => `#${String(n).padStart(4, '0')}`).join(', ');
+    const boletas = labelsBoletasVenta(abono).join(', ');
     let msg = `🧾 *Comprobante de Abono*\n\n`;
     msg += `Hola *${abono.cliente_nombre}*, confirmamos tu abono:\n\n`;
     msg += `💵 *Monto abonado:* ${fmt(abono.monto)}\n`;
@@ -408,9 +421,9 @@ function AbonoDetalleExpandido({ abono }) {
                 <div className="pt-2 border-t border-slate-100">
                   <span className="text-xs text-slate-400">Boletas ({abono.cantidad_boletas}):</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {abono.numeros_boletas && abono.numeros_boletas.map((num, i) => (
+                    {labelsBoletasVenta(abono).map((label, i) => (
                       <span key={i} className="inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold bg-blue-50 text-blue-700 rounded border border-blue-200">
-                        #{String(num).padStart(4, '0')}
+                        {label}
                       </span>
                     ))}
                   </div>

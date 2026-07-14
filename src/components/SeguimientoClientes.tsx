@@ -11,6 +11,7 @@ import {
 import { normalizarTelefono } from '@/utils/telefono'
 import { getMediosDePagoTexto } from '@/config/paymentInfo'
 import { WHATSAPP_MENSAJE_ACTIVO } from '@/config/features'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const COP = (v: number) =>
@@ -79,7 +80,7 @@ function generarUrlWhatsAppSeguimiento(cliente: ClienteSeguimiento): string | nu
     for (const [rifaNombre, boletas] of rifaMap.entries()) {
       msg += `🎟️ *${rifaNombre}*\n`
       for (const b of boletas) {
-        const num = `#${String(b.numero).padStart(4, '0')}`
+        const num = formatBoletaNumeros(b.numeros, b.numero)
         if (b.estado === 'RESERVADA') {
           msg += `  ${getEmoji(b.estado)} Boleta *${num}* — Reservada (pendiente: ${COP_fmt(Number(b.saldo_pendiente))})\n`
         } else {
@@ -111,7 +112,7 @@ function FilaBoleta({ b }: { b: BoletaSeguimiento }) {
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
       <td className="py-2 px-3 font-mono font-semibold text-slate-700 text-sm whitespace-nowrap">
-        #{String(b.numero).padStart(4, '0')}
+        {formatBoletaNumeros(b.numeros, b.numero)}
       </td>
       <td className="py-2 px-3">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${estadoColor[b.estado] || 'bg-slate-100 text-slate-600'}`}>
@@ -298,7 +299,7 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
                 key={b.boleta_id}
                 className={`inline-block font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border ${estadoColor[b.estado] || 'bg-slate-100 text-slate-500 border-slate-200'}`}
               >
-                #{String(b.numero).padStart(4, '0')}
+                {formatBoletaNumeros(b.numeros, b.numero)}
               </span>
             ))}
           </div>

@@ -10,6 +10,7 @@ import {
   type SAAbono,
   type SABoleta,
 } from '@/lib/superadminVentasApi'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 type ConfirmState = {
   title: string
@@ -375,7 +376,7 @@ export default function SuperadminVentasPage() {
                   <tbody>
                     {detalle!.boletas.map((b: SABoleta) => (
                       <tr key={b.boleta_id} className="border-t border-slate-100">
-                        <td className="px-3 py-2 font-medium text-slate-800">#{b.numero}</td>
+                        <td className="px-3 py-2 font-medium text-slate-800">{formatBoletaNumeros(b.numeros, b.numero)}</td>
                         <td className="px-3 py-2">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColor(b.estado)}`}>{b.estado}</span>
                         </td>
@@ -383,10 +384,10 @@ export default function SuperadminVentasPage() {
                         <td className="px-3 py-2 text-right">
                           <button
                             onClick={() => setConfirm({
-                              title: `Liberar boleta #${b.numero}`,
+                              title: `Liberar boleta ${formatBoletaNumeros(b.numeros, b.numero)}`,
                               message: 'La boleta volverá a DISPONIBLE, se anularán sus abonos ligados y se recalculará el total de la venta. ¿Continuar?',
                               type: 'danger',
-                              onConfirm: () => ejecutar(() => superadminVentasApi.liberarBoleta(b.boleta_id), `Boleta #${b.numero} liberada.`),
+                              onConfirm: () => ejecutar(() => superadminVentasApi.liberarBoleta(b.boleta_id), `Boleta ${formatBoletaNumeros(b.numeros, b.numero)} liberada.`),
                             })}
                             className="text-red-600 hover:text-red-800 font-medium"
                           >
@@ -481,7 +482,7 @@ export default function SuperadminVentasPage() {
                     className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
                   >
                     <option value="">Boleta (opcional)...</option>
-                    {detalle!.boletas.map((b) => <option key={b.boleta_id} value={b.boleta_id}>#{b.numero}</option>)}
+                    {detalle!.boletas.map((b) => <option key={b.boleta_id} value={b.boleta_id}>{formatBoletaNumeros(b.numeros, b.numero)}</option>)}
                   </select>
                   <button
                     disabled={!nuevoAbonoMonto || Number(nuevoAbonoMonto) <= 0}
@@ -551,7 +552,11 @@ function AbonoRow({
           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColor(abono.estado)}`}>{abono.estado}</span>
           <span className="font-semibold text-slate-800">{money(abono.monto)}</span>
           <span className="text-xs text-slate-500">{abono.medio_pago_nombre || abono.gateway_pago || '—'}</span>
-          {abono.boleta_numero != null && <span className="text-xs text-slate-400">Boleta #{abono.boleta_numero}</span>}
+          {(abono.boleta_numero != null || (abono.boleta_numeros && abono.boleta_numeros.length > 0)) && (
+            <span className="text-xs text-slate-400">
+              Boleta {formatBoletaNumeros(abono.boleta_numeros, abono.boleta_numero)}
+            </span>
+          )}
         </div>
         {!anulado && (
           <div className="flex items-center gap-2">

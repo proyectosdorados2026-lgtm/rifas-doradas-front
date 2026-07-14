@@ -5,6 +5,7 @@ import { VentaPublicaListado } from '@/types/ventasPublicas'
 import { ventasPublicasApi } from '@/lib/ventasPublicasApi'
 import { normalizarTelefono } from '@/utils/telefono'
 import { getMediosDePagoBloque } from '@/config/paymentInfo'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface ListaVentasPublicasProps {
   onSelectVenta: (ventaId: string) => void
@@ -118,10 +119,14 @@ export default function ListaVentasPublicas({
   const generarWhatsAppLink = (venta: VentaPublicaListado) => {
     const telefonoCompleto = normalizarTelefono(venta.cliente_telefono)
     
-    // Formatear números de boletas
-    const numeros = venta.numeros_boletas && venta.numeros_boletas.length > 0
-      ? venta.numeros_boletas.map(n => `#${String(n).padStart(4, '0')}`).join(', ')
-      : `${venta.cantidad_boletas} boleta(s)`
+    // Formatear pacha (ambos números) por boleta
+    const boletasList = (venta as any).boletas
+    const numeros =
+      Array.isArray(boletasList) && boletasList.length > 0
+        ? boletasList.map((b: any) => formatBoletaNumeros(b.numeros, b.numero)).join(', ')
+        : venta.numeros_boletas && venta.numeros_boletas.length > 0
+          ? venta.numeros_boletas.map((n) => `#${String(n).padStart(4, '0')}`).join(', ')
+          : `${venta.cantidad_boletas} boleta(s)`
     
     const mediosDePago = getMediosDePagoBloque()
 

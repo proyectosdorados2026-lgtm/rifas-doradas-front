@@ -82,6 +82,7 @@ export interface ApiError {
 export interface BoletaDetalle {
   boleta_id: string
   numero: number
+  numeros?: number[]
   estado: 'DISPONIBLE' | 'RESERVADA' | 'ABONADA' | 'PAGADA' | 'TRANSFERIDA' | 'ANULADA'
   precio_unitario: number
   abono: number
@@ -122,6 +123,7 @@ export interface AbonoHistorial {
   medio_pago_nombre: string | null
   rifa_nombre: string | null
   boleta_numero: number | null
+  boleta_numeros?: number[] | null
   venta_id: string
 }
 

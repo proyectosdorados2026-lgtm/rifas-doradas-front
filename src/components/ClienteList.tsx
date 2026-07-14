@@ -6,6 +6,7 @@ import { clienteApi } from '@/lib/clienteApi'
 import { RifaConBoletas } from '@/types/cliente'
 import { normalizarTelefono } from '@/utils/telefono'
 import { getMediosDePagoTexto } from '@/config/paymentInfo'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface ClienteListProps {
   clientes: Cliente[]
@@ -70,7 +71,7 @@ async function generarWhatsAppRecordatorioConDetalle(cliente: Cliente): Promise<
 
       msg += `🎟️ *${rifa.rifa_nombre}*\n`
       boletasPendientes.forEach(b => {
-        const num = `#${String(b.numero).padStart(4, '0')}`
+        const num = formatBoletaNumeros(b.numeros, b.numero)
         if (b.estado === 'RESERVADA') {
           msg += `  ${getEstadoEmoji(b.estado)} Boleta *${num}* — Reservada (pendiente: ${formatCurrency(Number(b.saldo))})
 `

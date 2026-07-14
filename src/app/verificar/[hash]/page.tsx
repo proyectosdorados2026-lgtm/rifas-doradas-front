@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { verificarBoleta, type VerificacionData } from '@/lib/verificarApi'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 export default function VerificarPage() {
   const params = useParams()
@@ -122,8 +123,8 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
           <div className="text-center mb-6">
             <p className="text-blue-400/60 text-xs uppercase tracking-[0.3em] mb-2">{rifa.nombre}</p>
             <div className="relative inline-block">
-              <div className="text-7xl sm:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-blue-200 leading-none">
-                #{boleta.numero.toString().padStart(4, '0')}
+              <div className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-blue-200 leading-tight tracking-tight">
+                {formatBoletaNumeros(boleta.numeros, boleta.numero)}
               </div>
               <div className="absolute -inset-4 bg-blue-500/5 rounded-2xl -z-10 blur-xl" />
             </div>

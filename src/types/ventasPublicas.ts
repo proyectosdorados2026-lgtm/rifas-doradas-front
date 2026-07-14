@@ -30,6 +30,7 @@ export interface AbonoPublico {
   notas?: string
   created_at: string
   boleta_numero: number
+  boleta_numeros?: number[]
   medio_pago_nombre: string
 }
 
@@ -73,6 +74,7 @@ export interface VentaPublicaListado {
   rifa_nombre: string
   cantidad_boletas: number
   numeros_boletas?: number[]
+  boletas?: Array<{ numero: number; numeros?: number[] }>
 }
 
 export interface EstadisticasPublicas {

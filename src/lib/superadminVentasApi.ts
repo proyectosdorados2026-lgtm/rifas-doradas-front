@@ -45,6 +45,7 @@ export interface SAVentaCabecera {
 export interface SABoleta {
   boleta_id: string
   numero: number
+  numeros?: number[]
   estado: string
   pagado_boleta: string
 }
@@ -60,6 +61,7 @@ export interface SAAbono {
   created_at: string
   boleta_id: string | null
   boleta_numero: number | null
+  boleta_numeros?: number[] | null
   medio_pago_nombre: string | null
   registrado_por_nombre: string | null
 }

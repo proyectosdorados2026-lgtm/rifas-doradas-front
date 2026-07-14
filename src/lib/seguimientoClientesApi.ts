@@ -3,6 +3,7 @@ import { API_BASE_URL } from '@/config/api'
 export interface BoletaSeguimiento {
   boleta_id: string
   numero: number
+  numeros?: number[]
   estado: 'RESERVADA' | 'ABONADA' | 'PAGADA' | 'DISPONIBLE'
   rifa_id: string
   rifa_nombre: string

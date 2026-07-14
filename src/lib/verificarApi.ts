@@ -3,6 +3,7 @@ import { API_BASE_URL } from '@/config/api'
 export interface VerificacionData {
   boleta: {
     numero: number
+    numeros?: number[]
     estado: string
     barcode: string
     fecha_compra: string

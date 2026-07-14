@@ -12,6 +12,7 @@ import {
   AbonoHistorial,
 } from '@/types/cliente'
 import ClienteHistorialMovimientos from '@/components/ClienteHistorialMovimientos'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface ClienteDetalleProps {
   clienteId: string
@@ -196,7 +197,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
         const saldoReal = esPagada ? 0 : b.saldo
         deudaTotal += saldoReal
 
-        msg += `  • Boleta #${String(b.numero).padStart(4, '0')}`
+        msg += `  • Boleta ${formatBoletaNumeros(b.numeros, b.numero)}`
         msg += ` — Estado: ${b.estado}`
         if (b.estado === 'ABONADA') {
           msg += ` | Abonado: ${formatCurrency(abonoReal)} | Debe: ${formatCurrency(saldoReal)}`
@@ -514,9 +515,9 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
                       <td className="px-4 py-3 text-sm text-black">{formatDate(abono.abono_fecha)}</td>
                       <td className="px-4 py-3 text-sm text-black font-medium">{abono.rifa_nombre || '—'}</td>
                       <td className="px-4 py-3 text-sm">
-                        {abono.boleta_numero != null ? (
+                        {abono.boleta_numero != null || (abono.boleta_numeros && abono.boleta_numeros.length > 0) ? (
                           <span className="bg-slate-100 px-2 py-1 rounded font-mono font-bold text-black">
-                            #{String(abono.boleta_numero).padStart(4, '0')}
+                            {formatBoletaNumeros(abono.boleta_numeros, abono.boleta_numero)}
                           </span>
                         ) : (
                           '—'
@@ -728,7 +729,7 @@ function RifaAccordion({
                     <tr key={boleta.boleta_id} className={`hover:bg-slate-50 transition-colors ${esPagada ? 'bg-green-50/50' : ''}`}>
                       <td className="px-4 py-3">
                         <span className="bg-slate-100 px-3 py-1 rounded font-mono font-black text-black text-sm">
-                          #{String(boleta.numero).padStart(4, '0')}
+                          {formatBoletaNumeros(boleta.numeros, boleta.numero)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
