@@ -169,47 +169,31 @@ export default function BoletasReservadasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Encabezado */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="max-w-7xl">
+        <div className="mb-6 border-b-[1.5px] border-black pb-4">
+          <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  ← Dashboard
-                </button>
-              </div>
-              <h1 className="text-3xl font-light text-slate-900">
-                Boletas Reservadas
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Inventario</p>
+              <h1 className="text-2xl sm:text-3xl font-[800] tracking-tight mt-1" style={{ fontFamily: 'var(--font-display)' }}>
+                Boletas reservadas
               </h1>
-              <p className="text-slate-600 mt-1">
-                Administra y libera boletas reservadas que no han sido pagadas
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
+                Administra y libera boletas reservadas sin pago.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchBoletas}
-                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Actualizar
-              </button>
-            </div>
+            <button
+              onClick={fetchBoletas}
+              className="px-4 py-2 bg-[var(--surface-elevated)] border-[1.5px] border-black text-black font-bold uppercase text-xs tracking-wider shadow-[3px_3px_0_#101010] hover:bg-[var(--primary)] flex items-center gap-2"
+            >
+              Actualizar
+            </button>
           </div>
         </div>
 
         {/* Mensaje de éxito */}
         {successMsg && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3 animate-pulse">
-            <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="mb-6 bg-green-50 border border-green-200 p-4 flex items-center gap-3">
             <span className="text-green-800 font-medium">{successMsg}</span>
           </div>
         )}

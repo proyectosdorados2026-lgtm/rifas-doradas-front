@@ -28,11 +28,100 @@ export default function CrearBoletasPage() {
   const [formData, setFormData] = useState<BoletaGenerateRequest>({
     qr_base_url: 'https://elgrancamion.com/verificar/',
     imagen_url: '',
-    diseño_template: 'modern' // Keep default but remove from UI
+    diseño_template: 'modern',
+    modo_pareo: 'manual',
   })
+  const [pares, setPares] = useState<[number | '', number | ''][]>([['', '']])
+  const [paresCsv, setParesCsv] = useState('')
+  const [entradaManual, setEntradaManual] = useState<'formulario' | 'csv'>('formulario')
+  const [num1Draft, setNum1Draft] = useState('')
+  const [num2Draft, setNum2Draft] = useState('')
+  const [parError, setParError] = useState<string | null>(null)
 
   const hasImage = Boolean(cachedImageFile || formData.imagen_url)
+  const rifaSeleccionada = rifas.find(r => r.id === selectedRifa)
+  const esDobleOportunidad = Boolean(rifaSeleccionada?.doble_oportunidad)
+  const totalBoletasEsperado = rifaSeleccionada?.total_boletas ?? 0
+
+  const paresCompletos = pares.filter(
+    (p): p is [number, number] =>
+      typeof p[0] === 'number' && typeof p[1] === 'number' && !Number.isNaN(p[0]) && !Number.isNaN(p[1])
+  )
+
+  const numerosUsados = new Set<number>()
+  for (const [a, b] of paresCompletos) {
+    numerosUsados.add(a)
+    numerosUsados.add(b)
+  }
+
+  const parseNumeroDraft = (raw: string): number | null => {
+    const t = raw.trim()
+    if (t === '') return null
+    const n = parseInt(t, 10)
+    if (Number.isNaN(n) || n < 0 || n > 9999) return null
+    return n
+  }
+
+  const agregarPar = () => {
+    setParError(null)
+    const a = parseNumeroDraft(num1Draft)
+    const b = parseNumeroDraft(num2Draft)
+    if (a === null || b === null) {
+      setParError('Ingresa dos números válidos entre 0 y 9999')
+      return
+    }
+    if (a === b) {
+      setParError('Los dos números del par deben ser distintos')
+      return
+    }
+    if (numerosUsados.has(a) || numerosUsados.has(b)) {
+      setParError(`Número ya usado: ${numerosUsados.has(a) ? String(a).padStart(4, '0') : String(b).padStart(4, '0')}`)
+      return
+    }
+    if (paresCompletos.length >= totalBoletasEsperado) {
+      setParError(`Ya tienes los ${totalBoletasEsperado} pares requeridos`)
+      return
+    }
+    setPares((prev) => {
+      const next = [...prev]
+      // Reemplazar fila vacía final o agregar
+      const last = next[next.length - 1]
+      if (last && last[0] === '' && last[1] === '') {
+        next[next.length - 1] = [a, b]
+      } else {
+        next.push([a, b])
+      }
+      return next
+    })
+    setNum1Draft('')
+    setNum2Draft('')
+  }
+
+  const quitarPar = (index: number) => {
+    setPares(paresCompletos.filter((_, i) => i !== index))
+  }
+
+  const sincronizarParesDesdeCsv = (texto: string) => {
+    setParesCsv(texto)
+    const parsed = texto
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split(/[,;\s]+/).map((p) => parseInt(p.trim(), 10))
+        if (parts.length !== 2 || parts.some((n) => Number.isNaN(n))) return null
+        return [parts[0], parts[1]] as [number, number]
+      })
+      .filter((p): p is [number, number] => p !== null)
+    setPares(parsed.length > 0 ? parsed : [['', '']])
+  }
   
+  useEffect(() => {
+    if (esDobleOportunidad) {
+      setFormData((prev) => ({ ...prev, modo_pareo: prev.modo_pareo || 'manual' }))
+    }
+  }, [esDobleOportunidad])
+
   const router = useRouter()
 
   useEffect(() => {
@@ -84,6 +173,49 @@ export default function CrearBoletasPage() {
       return
     }
 
+    let paresParsed: [number, number][] | undefined
+    if (esDobleOportunidad && formData.modo_pareo === 'manual') {
+      if (entradaManual === 'csv') {
+        try {
+          paresParsed = paresCsv
+            .split(/\n+/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => {
+              const parts = line.split(/[,;\s]+/).map((p) => parseInt(p.trim(), 10))
+              if (parts.length !== 2 || parts.some((n) => Number.isNaN(n))) {
+                throw new Error(`Línea inválida: "${line}" (usa formato 2809,7633)`)
+              }
+              return [parts[0], parts[1]] as [number, number]
+            })
+        } catch (parseErr) {
+          setError(parseErr instanceof Error ? parseErr.message : 'Error parseando pares')
+          return
+        }
+      } else {
+        paresParsed = paresCompletos
+      }
+
+      const totalEsperado = rifaSeleccionada?.total_boletas ?? 0
+      if (!paresParsed || paresParsed.length !== totalEsperado) {
+        setError(`Debes definir exactamente ${totalEsperado} pares (tienes ${paresParsed?.length ?? 0})`)
+        return
+      }
+      const usados = new Set<number>()
+      for (const [a, b] of paresParsed) {
+        if (a === b || a < 0 || a > 9999 || b < 0 || b > 9999) {
+          setError(`Par inválido: ${a}, ${b}`)
+          return
+        }
+        if (usados.has(a) || usados.has(b)) {
+          setError(`Número duplicado en los pares: ${usados.has(a) ? a : b}`)
+          return
+        }
+        usados.add(a)
+        usados.add(b)
+      }
+    }
+
     try {
       setCreating(true)
       setError(null)
@@ -91,7 +223,6 @@ export default function CrearBoletasPage() {
 
       let imagenUrl = formData.imagen_url
 
-      // Si hay imagen en caché (aún no subida), subirla ahora solo antes de generar
       if (cachedImageFile) {
         setUploadingImage(true)
         const uploadResponse = await uploadApi.uploadImagen(cachedImageFile)
@@ -99,10 +230,18 @@ export default function CrearBoletasPage() {
         setUploadingImage(false)
       }
 
-      const response = await boletaApi.generarBoletas(selectedRifa, {
+      const payload: BoletaGenerateRequest = {
         ...formData,
         imagen_url: imagenUrl,
-      })
+      }
+      if (esDobleOportunidad) {
+        payload.modo_pareo = formData.modo_pareo || 'aleatorio'
+        if (payload.modo_pareo === 'manual' && paresParsed) {
+          payload.pares = paresParsed
+        }
+      }
+
+      const response = await boletaApi.generarBoletas(selectedRifa, payload)
       
       setSuccess(`Se han generado ${response.data.boletas_generadas} boletas exitosamente con la configuración proporcionada`)
       
@@ -372,7 +511,136 @@ export default function CrearBoletasPage() {
                 <p><strong>Premio:</strong> {rifas.find(r => r.id === selectedRifa)?.premio || rifas.find(r => r.id === selectedRifa)?.premio_principal}</p>
                 <p><strong>Total de boletas:</strong> {rifas.find(r => r.id === selectedRifa)?.total_boletas || 'N/A'}</p>
                 <p><strong>Estado:</strong> {rifas.find(r => r.id === selectedRifa)?.estado}</p>
+                {esDobleOportunidad && (
+                  <p><strong>Tipo:</strong> Doble oportunidad (2 números por boleta)</p>
+                )}
               </div>
+              {esDobleOportunidad && (
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900 mb-2">Cómo definir los 2 números de cada boleta</label>
+                    <select
+                      value={formData.modo_pareo || 'manual'}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          modo_pareo: e.target.value as 'aleatorio' | 'manual',
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg bg-white text-slate-900"
+                    >
+                      <option value="manual">Elegir yo los 2 números de cada boleta</option>
+                      <option value="aleatorio">Aleatorio (el sistema arma los pares)</option>
+                    </select>
+                  </div>
+                  {formData.modo_pareo === 'manual' && (
+                    <div className="space-y-3 rounded-lg border border-blue-200 bg-white p-3">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEntradaManual('formulario')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md ${
+                            entradaManual === 'formulario' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          Elegir números
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEntradaManual('csv')}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-md ${
+                            entradaManual === 'csv' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          Pegar lista CSV
+                        </button>
+                      </div>
+
+                      {entradaManual === 'formulario' ? (
+                        <>
+                          <p className="text-xs text-blue-800">
+                            Cada boleta lleva 2 números. Agrega el par: número A + número B.
+                            Progreso: <strong>{paresCompletos.length}</strong> / {totalBoletasEsperado}
+                          </p>
+                          <div className="flex flex-wrap items-end gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Número 1</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={9999}
+                                value={num1Draft}
+                                onChange={(e) => setNum1Draft(e.target.value)}
+                                placeholder="2809"
+                                className="w-28 px-3 py-2 border border-slate-300 rounded-lg font-mono text-slate-900"
+                              />
+                            </div>
+                            <div className="pb-2 text-slate-400 font-bold">+</div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Número 2</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={9999}
+                                value={num2Draft}
+                                onChange={(e) => setNum2Draft(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), agregarPar())}
+                                placeholder="7633"
+                                className="w-28 px-3 py-2 border border-slate-300 rounded-lg font-mono text-slate-900"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={agregarPar}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                            >
+                              Agregar par
+                            </button>
+                          </div>
+                          {parError && <p className="text-xs text-red-600">{parError}</p>}
+
+                          {paresCompletos.length > 0 && (
+                            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                              {paresCompletos.map(([a, b], idx) => (
+                                <div key={`${a}-${b}-${idx}`} className="flex items-center justify-between px-3 py-2 text-sm">
+                                  <span className="font-mono text-slate-900">
+                                    Boleta {idx + 1}: <strong>#{String(a).padStart(4, '0')}</strong>
+                                    {' · '}
+                                    <strong>#{String(b).padStart(4, '0')}</strong>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => quitarPar(idx)}
+                                    className="text-xs text-red-600 hover:text-red-800"
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-blue-900 mb-2">
+                            Pares (uno por línea: 2809,7633)
+                          </label>
+                          <textarea
+                            value={paresCsv}
+                            onChange={(e) => sincronizarParesDesdeCsv(e.target.value)}
+                            rows={8}
+                            placeholder={'2809,7633\n0042,9911\n...'}
+                            className="w-full px-3 py-2 border border-blue-300 rounded-lg font-mono text-sm text-slate-900 bg-white"
+                          />
+                          <p className="mt-1 text-xs text-blue-700">
+                            Debes ingresar exactamente {totalBoletasEsperado} líneas. Números del 0 al 9999, sin repetir.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-blue-700">
                   <strong>Nota:</strong> El sistema generará automáticamente todas las boletas para esta rifa según la configuración.
@@ -446,7 +714,18 @@ export default function CrearBoletasPage() {
                   imagenUrl={imagePreview || (formData.imagen_url ? (getStorageImageUrl(formData.imagen_url) ?? formData.imagen_url) : '')}
                   diseñoTemplate={formData.diseño_template}
                   rifaId={selectedRifa}
-                  boletaNumero={1}
+                  boletaNumero={
+                    esDobleOportunidad && paresCompletos[0]
+                      ? paresCompletos[0][0]
+                      : esDobleOportunidad
+                        ? 2809
+                        : 1
+                  }
+                  numeros={
+                    esDobleOportunidad
+                      ? (paresCompletos[0] || [2809, 7633])
+                      : undefined
+                  }
                   barcode={`BOLETA-${selectedRifa}-0001`}
                 />
               </div>

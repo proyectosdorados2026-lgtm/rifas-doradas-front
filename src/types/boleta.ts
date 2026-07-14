@@ -15,6 +15,7 @@ export interface VendedorInfo {
 export interface Boleta {
   id: string
   numero: number
+  numeros?: number[]
   estado: string
   qr_url: string | null
   barcode: string | null
@@ -42,6 +43,7 @@ export interface BoletaDetail {
   id: string
   rifa_id: string
   numero: number
+  numeros?: number[]
   estado: string
   qr_url: string
   barcode: string
@@ -92,6 +94,8 @@ export interface BoletaGenerateRequest {
   qr_base_url: string
   imagen_url: string
   diseño_template: string
+  modo_pareo?: 'aleatorio' | 'manual'
+  pares?: [number, number][]
 }
 
 export interface BoletaGenerateResponse {

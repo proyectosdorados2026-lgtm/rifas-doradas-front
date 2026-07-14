@@ -9,11 +9,13 @@ import {
   BOLETA_DEFAULT_HEIGHT,
   boletaHeightForImage,
 } from '@/constants/boletaDimensions'
+import { formatBoletaNumeros, normalizeNumeros } from '@/utils/formatBoletaNumeros'
 
 interface BoletaTicketProps {
   qrUrl: string
   barcode: string
   numero: number
+  numeros?: number[]
   imagenUrl?: string | null
   rifaNombre: string
   estado: string
@@ -33,6 +35,7 @@ export default function BoletaTicket(props: BoletaTicketProps) {
   const {
     qrUrl,
     numero,
+    numeros,
     imagenUrl,
     rifaNombre,
     estado,
@@ -225,7 +228,9 @@ export default function BoletaTicket(props: BoletaTicketProps) {
         {nota && <div className="boleta-ticket__nota">{nota}</div>}
 
         <div className="boleta-ticket__footer">
-          <div className="boleta-ticket__numero">#{numero.toString().padStart(4, '0')}</div>
+          <div className="boleta-ticket__numero">
+            {formatBoletaNumeros(normalizeNumeros(numeros, numero))}
+          </div>
           {typeof precio === 'number' && precio > 0 && (
             <div className="boleta-ticket__precio">${precio.toLocaleString('es-CO')}</div>
           )}
@@ -251,7 +256,7 @@ export default function BoletaTicket(props: BoletaTicketProps) {
           <div className="boleta-ticket__right-fallback">
             <div className="text-center">
               <p>{rifaNombre}</p>
-              <p>Boleta #{numero.toString().padStart(4, '0')}</p>
+              <p>{formatBoletaNumeros(normalizeNumeros(numeros, numero))}</p>
             </div>
           </div>
         )}

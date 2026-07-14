@@ -134,48 +134,49 @@ export default function ClientesPage() {
 
   if (loading && clientes.length === 0 && viewMode === 'list') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-slate-500 font-medium">Cargando clientes...</p>
+      <div className="px-4 py-16 flex items-center justify-center">
+        <div className="border-[1.5px] border-black bg-[var(--surface-elevated)] px-5 py-3 text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0_#101010]">
+          Cargando clientes...
         </div>
       </div>
     )
   }
 
+  const pageTitle =
+    viewMode === 'detail'
+      ? 'Detalle de cliente'
+      : viewMode === 'form'
+        ? editingCliente
+          ? 'Editar cliente'
+          : 'Nuevo cliente'
+        : 'Clientes'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="text-slate-600 hover:text-slate-900 transition-colors font-medium"
-              >
-                ← Dashboard
-              </button>
-              <h1 className="text-2xl font-bold text-black">
-                {viewMode === 'detail' ? '👤 Detalle de Cliente' : viewMode === 'form' ? (editingCliente ? '✏️ Editar Cliente' : '➕ Nuevo Cliente') : '👥 Clientes'}
-              </h1>
-            </div>
-            {viewMode === 'list' && (
-              <button
-                onClick={handleCreateCliente}
-                className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors font-semibold"
-              >
-                + Nuevo Cliente
-              </button>
-            )}
+    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <header className="mb-6 border-b-[1.5px] border-black pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Directorio</p>
+            <h1 className="text-2xl sm:text-3xl font-[800] tracking-tight mt-1" style={{ fontFamily: 'var(--font-display)' }}>
+              {pageTitle}
+            </h1>
           </div>
+          {viewMode === 'list' && (
+            <button
+              onClick={handleCreateCliente}
+              className="bg-[var(--primary)] text-black border-[1.5px] border-black px-4 py-2 font-bold uppercase text-sm tracking-wide shadow-[3px_3px_0_#101010] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#101010]"
+            >
+              + Nuevo cliente
+            </button>
+          )}
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+          <div className="bg-[var(--danger-light)] border-[1.5px] border-black text-[var(--danger)] px-4 py-3 mb-6 flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700 font-bold">✕</button>
+            <button onClick={() => setError(null)} className="font-bold">✕</button>
           </div>
         )}
 

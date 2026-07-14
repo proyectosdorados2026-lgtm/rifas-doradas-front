@@ -9,6 +9,7 @@ interface BoletaPreviewProps {
   diseñoTemplate: string
   rifaId: string
   boletaNumero: number
+  numeros?: number[]
   barcode: string
 }
 
@@ -18,6 +19,7 @@ export default function BoletaPreview({
   diseñoTemplate,
   rifaId,
   boletaNumero,
+  numeros,
   barcode,
 }: BoletaPreviewProps) {
   const [imageError, setImageError] = useState(false)
@@ -42,6 +44,7 @@ export default function BoletaPreview({
           qrUrl={qrImageUrl}
           barcode={barcode}
           numero={boletaNumero}
+          numeros={numeros}
           imagenUrl={imagenUrl}
           rifaNombre={diseñoTemplate ?? `Rifa ${rifaId}`}
           estado="DISPONIBLE"

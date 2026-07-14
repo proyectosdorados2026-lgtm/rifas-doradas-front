@@ -6,10 +6,13 @@ import ClienteSearch from '@/components/ventas/ClienteSearch'
 import { Cliente } from '@/types/ventas'
 import { ventasApi } from '@/lib/ventasApi'
 import ListaVentasPendientes from '@/components/ventas/ListaVentasPendientes'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface ResultadoBusquedaBoleta {
   boleta_buscada: number
+  boleta_buscada_numeros?: number[]
   rifa_nombre: string
+  doble_oportunidad?: boolean
   venta_id: string
   estado_venta: string
   created_at: string
@@ -37,6 +40,7 @@ export default function GestionarAbonosPage() {
   const [resultadosBoleta, setResultadosBoleta] = useState<ResultadoBusquedaBoleta[] | null>(null)
   const [clienteDeBoleta, setClienteDeBoleta] = useState<Cliente | null>(null)
   const [boletaBuscadaNum, setBoletaBuscadaNum] = useState<number | null>(null)
+  const [boletaBuscadaNumeros, setBoletaBuscadaNumeros] = useState<number[] | null>(null)
   const [ventaConBoletaId, setVentaConBoletaId] = useState<string | null>(null)
 
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null)
@@ -44,7 +48,7 @@ export default function GestionarAbonosPage() {
   const clienteActivo = clienteSeleccionado || clienteDeBoleta
 
   const volverVentas = () => router.push('/ventas')
-  const volverDashboard = () => router.push('/dashboard')
+  const volverDashboard = () => router.push('/mis-reportes')
 
   const buscarPorBoleta = async () => {
     const num = parseInt(numeroBoleta.trim())
@@ -58,6 +62,7 @@ export default function GestionarAbonosPage() {
     setResultadosBoleta(null)
     setClienteDeBoleta(null)
     setBoletaBuscadaNum(null)
+    setBoletaBuscadaNumeros(null)
     setVentaConBoletaId(null)
 
     try {
@@ -71,6 +76,12 @@ export default function GestionarAbonosPage() {
 
       setResultadosBoleta(data.resultados)
       setBoletaBuscadaNum(num)
+      const primero = data.resultados?.[0]
+      setBoletaBuscadaNumeros(
+        Array.isArray(primero?.boleta_buscada_numeros) && primero.boleta_buscada_numeros.length > 0
+          ? primero.boleta_buscada_numeros.map(Number)
+          : [num]
+      )
 
       // Mismo flujo que búsqueda por cliente: mostrar todas las ventas del cliente.
       // Si hay un solo cliente en los resultados, ir directo a su lista de ventas.
@@ -104,6 +115,7 @@ export default function GestionarAbonosPage() {
     setResultadosBoleta(null)
     setClienteDeBoleta(null)
     setBoletaBuscadaNum(null)
+    setBoletaBuscadaNumeros(null)
     setVentaConBoletaId(null)
     setErrorBusqueda(null)
     setClienteSeleccionado(null)
@@ -120,53 +132,58 @@ export default function GestionarAbonosPage() {
       direccion: resultado.cliente.direccion,
     })
     setVentaConBoletaId(resultado.venta_id)
+    if (Array.isArray(resultado.boleta_buscada_numeros) && resultado.boleta_buscada_numeros.length > 0) {
+      setBoletaBuscadaNumeros(resultado.boleta_buscada_numeros.map(Number))
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16 space-x-4">
-            <button type="button" onClick={volverVentas} className="text-slate-600 hover:text-slate-900">
-              ← Ventas
-            </button>
-            <button type="button" onClick={volverDashboard} className="text-slate-500 hover:text-slate-700 text-sm">
-              Dashboard
-            </button>
-            <h1 className="text-xl font-semibold text-slate-900">Gestionar Abonos</h1>
+    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <header className="mb-6 border-b-[1.5px] border-black pb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={volverVentas}
+            className="border-[1.5px] border-black bg-[var(--surface-elevated)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider hover:bg-[var(--primary)]"
+          >
+            ← Ventas
+          </button>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Cobranza</p>
+            <h1 className="text-2xl font-[800] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+              Gestionar abonos
+            </h1>
           </div>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-5xl space-y-6">
 
         {/* Selector de modo de búsqueda */}
         {!clienteActivo && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Tabs de búsqueda */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="flex border-b border-slate-200">
+            <div className="bg-[var(--surface-elevated)] border-[1.5px] border-black shadow-[4px_4px_0_#101010] overflow-hidden">
+              <div className="flex border-b-[1.5px] border-black">
                 <button
                   onClick={() => { setModoBusqueda('boleta'); resetBusqueda() }}
-                  className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
+                  className={`flex-1 px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors ${
                     modoBusqueda === 'boleta'
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      ? 'bg-[var(--primary)] text-black'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)]'
                   }`}
                 >
-                  🎫 Buscar por # Boleta
+                  Buscar por # del par
                 </button>
                 <button
                   onClick={() => { setModoBusqueda('cliente'); resetBusqueda() }}
-                  className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
+                  className={`flex-1 px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors border-l-[1.5px] border-black ${
                     modoBusqueda === 'cliente'
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      ? 'bg-[var(--primary)] text-black'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)]'
                   }`}
                 >
-                  👤 Buscar por Cliente
+                  Buscar por cliente
                 </button>
               </div>
 
@@ -174,7 +191,7 @@ export default function GestionarAbonosPage() {
                 {modoBusqueda === 'boleta' && (
                   <div className="space-y-4">
                     <p className="text-sm text-slate-600">
-                      Ingresa el número de la boleta para ver las ventas del cliente y en cuál está esa boleta.
+                      Ingresa cualquier número de la boleta (en doble oportunidad, cualquiera de los dos del par).
                     </p>
                     <div className="flex gap-3">
                       <div className="relative flex-1">
@@ -212,7 +229,10 @@ export default function GestionarAbonosPage() {
                     {resultadosBoleta && resultadosBoleta.length > 0 && !clienteDeBoleta && (
                       <div className="space-y-3">
                         <p className="text-sm text-slate-600 font-medium">
-                          La boleta #{boletaBuscadaNum?.toString().padStart(4, '0')} aparece en más de un cliente. Selecciona cuál gestionar:
+                          La boleta {formatBoletaNumeros(
+                            resultadosBoleta[0]?.boleta_buscada_numeros,
+                            boletaBuscadaNum
+                          )} aparece en más de un cliente. Selecciona cuál gestionar:
                         </p>
                         {resultadosBoleta.map((r) => (
                           <button
@@ -261,13 +281,13 @@ export default function GestionarAbonosPage() {
                   <span className="text-2xl">🎫</span>
                   <div>
                     <p className="text-sm text-blue-700">
-                      Boleta #{boletaBuscadaNum.toString().padStart(4, '0')} encontrada
+                      Boleta {formatBoletaNumeros(boletaBuscadaNumeros, boletaBuscadaNum)} encontrada
                       {resultadosBoleta?.[0]?.rifa_nombre && (
                         <> en <strong>{resultadosBoleta.find(r => r.venta_id === ventaConBoletaId)?.rifa_nombre || resultadosBoleta[0].rifa_nombre}</strong></>
                       )}
                     </p>
                     <p className="text-xs text-blue-600 mt-0.5">
-                      Se muestran todas las ventas pendientes de este cliente. La boleta buscada aparece resaltada.
+                      Se muestran todas las ventas pendientes de este cliente. El par buscado aparece resaltado.
                     </p>
                   </div>
                 </div>

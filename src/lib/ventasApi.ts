@@ -67,18 +67,35 @@ class VentasApiService {
       if (data?.details && Array.isArray(data.details)) {
         const fieldErrors = data.details.map((d: any) => `${d.field}: ${d.message}`).join('; ')
         serverMessage = `${serverMessage} (${fieldErrors})`
-        console.error('[VentasAPI] Validation details:', data.details)
       }
-      console.error('[VentasAPI] Request failed:', {
-        url: `${this.baseUrl}${endpoint}`,
-        endpoint,
-        status: response.status,
-        data,
-      })
+
+      // Errores de negocio esperados (ej. boleta ya bloqueada): no usar console.error
+      // porque en Next.js/dev dispara el overlay de error.
+      const expectedCodes = new Set([
+        'BOLETA_ALREADY_BLOCKED',
+        'BOLETA_ALREADY_SOLD',
+        'SISTEMA_EN_PAUSA',
+      ])
+      const isExpected =
+        expectedCodes.has(data?.error) ||
+        response.status === 409 ||
+        (response.status === 400 && typeof data?.error === 'string')
+
+      if (!isExpected) {
+        console.warn('[VentasAPI] Request failed:', {
+          endpoint,
+          status: response.status,
+          message: serverMessage,
+        })
+      }
+
       const error = new Error(
-        `API Error ${response.status}: ${serverMessage}`
+        typeof serverMessage === 'string'
+          ? serverMessage
+          : `API Error ${response.status}`
       ) as any
       error.response = { data, status: response.status }
+      error.code = data?.error
       throw error
     }
 

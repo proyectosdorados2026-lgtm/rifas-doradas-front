@@ -27,27 +27,27 @@ function MethodCard({ method, totalGeneral, isSelected, onSelect }) {
   return (
     <button
       onClick={() => onSelect(method.metodo)}
-      className={`text-left w-full rounded-2xl border p-5 transition-all duration-200 cursor-pointer
+      className={`text-left w-full border-[1.5px] border-black p-3 sm:p-5 transition-all duration-200 cursor-pointer min-w-0
         ${isSelected
-          ? `${config.bgColor} ${config.borderColor} ring-2 ring-offset-1 shadow-md`
-          : 'bg-white border-slate-200 hover:shadow-md hover:border-slate-300'
+          ? `${config.bgColor} shadow-[3px_3px_0_#101010]`
+          : 'bg-white hover:shadow-[3px_3px_0_#101010]'
         }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{config.icon}</span>
-          <span className={`font-semibold text-sm ${isSelected ? config.textColor : 'text-slate-700'}`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg sm:text-xl shrink-0">{config.icon}</span>
+          <span className={`font-semibold text-xs sm:text-sm truncate ${isSelected ? config.textColor : 'text-slate-700'}`}>
             {config.label}
           </span>
         </div>
-        <span className={`text-xs font-bold px-2 py-1 rounded-full ${isSelected ? `${config.bgColor} ${config.textColor}` : 'bg-slate-100 text-slate-500'}`}>
+        <span className={`text-xs font-bold px-2 py-1 shrink-0 ${isSelected ? `${config.bgColor} ${config.textColor}` : 'bg-slate-100 text-slate-500'}`}>
           {porcentaje}%
         </span>
       </div>
 
       {/* Monto principal */}
-      <p className={`text-2xl font-bold ${isSelected ? config.textColor : 'text-slate-900'}`}>
+      <p className={`text-lg sm:text-2xl font-bold break-all ${isSelected ? config.textColor : 'text-slate-900'}`}>
         ${monto.toLocaleString('es-CO')}
       </p>
 
@@ -117,14 +117,14 @@ export default function MethodsChart({ methods, serieDiaria, fechaInicio, fechaF
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+    <div className="bg-white border-[1.5px] border-black p-4 sm:p-6 space-y-4 sm:space-y-5 min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Métodos de Pago</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900">Métodos de Pago</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 break-words">
             {periodoLabel}
-            {hayFiltro && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Filtrado</span>}
+            {hayFiltro && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 font-medium">Filtrado</span>}
           </p>
         </div>
         <div className="text-right">

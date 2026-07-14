@@ -19,6 +19,8 @@ export interface Rifa {
   creador_nombre?: string
   created_at: string
   updated_at: string
+  doble_oportunidad?: boolean
+  numeros_por_boleta?: number
 }
 
 export interface RifaCreateRequest {
@@ -28,6 +30,7 @@ export interface RifaCreateRequest {
   total_boletas: number
   fecha_sorteo: string
   estado?: 'BORRADOR' | 'ACTIVA' | 'PAUSADA' | 'TERMINADA'
+  doble_oportunidad?: boolean
 }
 
 export interface RifaUpdateRequest {

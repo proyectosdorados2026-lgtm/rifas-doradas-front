@@ -2,17 +2,24 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { homeRouteForRole } from '@/config/adminNav'
 
 export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (token) {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
+    const userData = localStorage.getItem('user')
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData)
+        router.push(homeRouteForRole(user?.rol))
+        return
+      } catch {
+        /* fallthrough */
+      }
     }
+    router.push('/login')
   }, [router])
 
   return (

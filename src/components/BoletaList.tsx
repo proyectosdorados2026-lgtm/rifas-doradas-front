@@ -23,6 +23,7 @@ import {
   BOLETA_DEFAULT_HEIGHT,
   boletaHeightForImage,
 } from '@/constants/boletaDimensions'
+import { formatBoletaNumeros, searchMatchesNumeros, normalizeNumeros } from '@/utils/formatBoletaNumeros'
 
 interface BoletaListProps {
   boletas: Boleta[]
@@ -42,7 +43,9 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
   const [notaTemp, setNotaTemp] = useState('')
   const [savingNota, setSavingNota] = useState(false)
   const [notasLocales, setNotasLocales] = useState<Record<string, string | null>>({})
+  const [vistaModo, setVistaModo] = useState<'tabla' | 'grilla'>('tabla')
   const router = useRouter()
+  const esDoble = Boolean(rifaInfo?.doble_oportunidad)
 
   // Determina label y clases del estado según la boleta
   const getEstadoInfo = (boleta: Boleta) => {
@@ -96,10 +99,10 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
       result = result.filter(boleta => {
-        const numeroStr = boleta.numero?.toString().padStart(4, '0') || ''
         const nombre = boleta.cliente_info?.nombre?.toLowerCase() || ''
         const identificacion = boleta.cliente_info?.identificacion?.toString() || ''
-        return numeroStr.includes(searchLower) || nombre.includes(searchLower) || identificacion.includes(searchTerm)
+        const matchNumero = searchMatchesNumeros(boleta.numeros, searchTerm, boleta.numero)
+        return matchNumero || nombre.includes(searchLower) || identificacion.includes(searchTerm)
       })
     }
 
@@ -120,6 +123,42 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
   }
 
   const formatBoletaNumber = (numero: number) => numero.toString().padStart(4, '0')
+
+  const colorCeldaNumero = (estadoRaw: string) => {
+    const e = (estadoRaw || '').toUpperCase()
+    if (e === 'DISPONIBLE') return 'bg-emerald-300 text-black hover:ring-2 hover:ring-emerald-600'
+    if (e === 'RESERVADA') return 'bg-blue-500 text-white hover:ring-2 hover:ring-blue-700'
+    if (e === 'ABONADA') return 'bg-orange-400 text-black hover:ring-2 hover:ring-orange-600'
+    if (e === 'PAGADA' || e === 'CON_PAGO') return 'bg-green-700 text-white hover:ring-2 hover:ring-green-900'
+    if (e === 'ANULADA' || e === 'CANCELADA') return 'bg-red-600 text-white hover:ring-2 hover:ring-red-800'
+    return 'bg-slate-200 text-slate-700'
+  }
+
+  /** Celdas de grilla: un item por cada número del pool (hereda estado de la boleta) */
+  const celdasNumeros = useMemo(() => {
+    if (!esDoble) return []
+    const cells: Array<{
+      numero: number
+      boletaId: string
+      estado: string
+      par: number[]
+      cliente?: string | null
+    }> = []
+    for (const b of filteredBoletas) {
+      const nums = normalizeNumeros(b.numeros, b.numero)
+      for (const n of nums) {
+        cells.push({
+          numero: n,
+          boletaId: b.id,
+          estado: b.estado || 'DISPONIBLE',
+          par: nums,
+          cliente: b.cliente_info?.nombre || null,
+        })
+      }
+    }
+    cells.sort((a, b) => a.numero - b.numero)
+    return cells
+  }, [filteredBoletas, esDoble])
 
   // --- Selección ---
   const toggleSelect = useCallback((id: string) => {
@@ -290,12 +329,13 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
           : '- Válida hasta el día del sorteo'
 
         const qrSrc = boleta.qr_url || ''
+        const numsLabel = formatBoletaNumeros(boleta.numeros, boleta.numero)
         const numPad = boleta.numero.toString().padStart(4, '0')
 
         // Usar la imagen data URL pre-cargada (sin CORS, instantáneo)
         const rightContent = imagenDataUrl
           ? `<img src="${imagenDataUrl}" style="width:100%;height:100%;object-fit:fill;display:block;" />`
-          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a,#151515);"><div style="text-align:center;"><p style="font-size:20px;font-weight:700;color:#d4af37;">${rifaInfo?.nombre || 'Rifa'}</p><p style="color:#a3a3a3;">Boleta #${numPad}</p></div></div>`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a,#151515);"><div style="text-align:center;"><p style="font-size:20px;font-weight:700;color:#d4af37;">${rifaInfo?.nombre || 'Rifa'}</p><p style="color:#a3a3a3;">${numsLabel}</p></div></div>`
 
         container.innerHTML = `
           <div class="boleta-ticket" style="${BOLETA_TICKET_STYLE}width:${BOLETA_WIDTH}px;height:${ticketHeight}px;">
@@ -313,7 +353,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
               </div>
               ${(() => { const n = getNotaBoleta(boleta); return n ? `<div style="text-align:center;font-size:8px;font-style:italic;color:#737373;max-height:24px;overflow:hidden;line-height:1.25;">${n}</div>` : ''; })()}
               <div>
-                <div style="${BOLETA_NUMERO_STYLE}">#${numPad}</div>
+                <div style="${BOLETA_NUMERO_STYLE}">${numsLabel}</div>
                 ${precioNum ? `<div style="${BOLETA_PRECIO_STYLE}">$${precioNum.toLocaleString('es-CO')}</div>` : ''}
               </div>
             </div>
@@ -517,6 +557,26 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
           </div>
 
           <div className="flex items-center gap-3 w-full lg:w-auto">
+            {esDoble && (
+              <div className="flex rounded-lg border border-slate-300 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setVistaModo('tabla')}
+                  className={`px-3 py-2 text-sm font-medium ${vistaModo === 'tabla' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
+                >
+                  Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVistaModo('grilla')}
+                  className={`px-3 py-2 text-sm font-medium ${vistaModo === 'grilla' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
+                >
+                  Grilla
+                </button>
+              </div>
+            )}
+            {vistaModo === 'tabla' && (
+              <>
             <label htmlFor="itemsPerPage" className="text-sm font-medium text-slate-600">Mostrar:</label>
             <select
               id="itemsPerPage"
@@ -532,6 +592,8 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -590,7 +652,38 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
         </div>
       )}
 
+      {/* Grilla de números (doble oportunidad) */}
+      {esDoble && vistaModo === 'grilla' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+          <div className="flex flex-wrap gap-3 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-300" /> Disponible</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500" /> Reservado</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-400" /> Abonado</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-700" /> Pagado</span>
+            <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-600" /> Anulado</span>
+            <span className="text-slate-500 ml-auto">{celdasNumeros.length} números</span>
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] gap-1 max-h-[70vh] overflow-y-auto p-1">
+            {celdasNumeros.map((cell) => (
+              <button
+                key={`${cell.boletaId}-${cell.numero}`}
+                type="button"
+                title={`${formatBoletaNumeros(cell.par)} · ${cell.estado}${cell.cliente ? ` · ${cell.cliente}` : ''}`}
+                onClick={() => router.push(`/boletas/${cell.boletaId}`)}
+                className={`h-9 text-[10px] font-mono font-bold rounded transition-transform active:scale-95 ${colorCeldaNumero(cell.estado)}`}
+              >
+                {String(cell.numero).padStart(4, '0')}
+              </button>
+            ))}
+          </div>
+          {celdasNumeros.length === 0 && (
+            <p className="text-center text-slate-500 py-12">No hay números para mostrar con los filtros actuales.</p>
+          )}
+        </div>
+      )}
+
       {/* Tabla de Boletas */}
+      {(!esDoble || vistaModo === 'tabla') && (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -640,8 +733,8 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-lg font-mono font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block">
-                          {formatBoletaNumber(boleta.numero)}
+                        <div className="text-sm font-mono font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded inline-block">
+                          {formatBoletaNumeros(boleta.numeros, boleta.numero)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -739,9 +832,10 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
           </table>
         </div>
       </div>
+      )}
 
       {/* Paginación Mejorada */}
-      {totalPages > 1 && (
+      {(!esDoble || vistaModo === 'tabla') && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 py-4">
           <div className="text-sm text-slate-500">
             Página <span className="font-semibold text-slate-900">{currentPage}</span> de <span className="font-semibold text-slate-900">{totalPages}</span>

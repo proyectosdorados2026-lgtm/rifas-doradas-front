@@ -6,11 +6,7 @@ import FiltersBar from "./components/FiltersBar";
 import KPISection from "./components/KPISection";
 import MethodsChart from "./components/MethodsChart";
 import TicketsChart from "./components/TicketsChart";
-import { useRouter } from "next/navigation";
 
-/* =======================
-   TIPOS
-======================= */
 type Rifa = {
   id: string;
   nombre: string;
@@ -25,7 +21,7 @@ type Vendedor = {
 type Scope = 'global' | 'mis-ventas';
 
 export type PersonFilter = {
-  tipo: 'TODOS' | 'ADMINS' | 'VENDEDOR';
+  tipo: 'TODOS' | 'ADMINS' | 'ADMIN' | 'VENDEDOR';
   vendedorId: string | null;
 };
 
@@ -38,19 +34,12 @@ type Props = {
 };
 
 export default function AnalyticsDashboard({ rifas, scope = 'global', title, esSuperAdmin = false, vendedores = [] }: Props) {
-  const router = useRouter();
-
-  const onBack = () => {
-    router.push('/dashboard');
-  };
-
   const headerTitle = title ?? (scope === 'mis-ventas' ? 'Mis Reportes' : 'Análisis de Rifas');
 
   const [selectedRifa, setSelectedRifa] = useState<string | null>(
     rifas.length ? rifas[0].id : null
   );
 
-  // Usar hora local (Colombia UTC-5) en vez de UTC para evitar fecha adelantada
   const hoy = (() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -62,10 +51,12 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Construir extraFilters para el backend (solo aplica a SUPER_ADMIN + scope global)
   const extraFilters = (() => {
     if (!esSuperAdmin || scope !== 'global') return {};
     if (personFilter.tipo === 'ADMINS') return { filtroRol: 'ADMINS' };
+    if (personFilter.tipo === 'ADMIN' && personFilter.vendedorId) {
+      return { vendedorId: personFilter.vendedorId };
+    }
     if (personFilter.tipo === 'VENDEDOR' && personFilter.vendedorId) {
       return { vendedorId: personFilter.vendedorId };
     }
@@ -110,34 +101,30 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRifa, fechaInicio, fechaFin, scope, personFilter.tipo, personFilter.vendedorId]);
 
-  if (!rifas.length) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="text-slate-500">No hay rifas disponibles</div>
-    </div>
-  );
+  if (!rifas.length) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-500">No hay rifas disponibles</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="app-shell">
-      <header className="app-header sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                className="p-2 -ml-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
-                title="Volver al Dashboard"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </button>
-              <h1 className="text-2xl font-light text-neutral-100">{headerTitle}</h1>
-            </div>
-          </div>
-        </div>
+    <div className="w-full min-w-0 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <header className="mb-4 sm:mb-6 border-b-[1.5px] border-black pb-3 sm:pb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Dashboard</p>
+        <h1
+          className="text-xl sm:text-3xl lg:text-4xl font-[800] tracking-tight text-black mt-1 break-words"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          {headerTitle}
+        </h1>
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1 max-w-2xl">
+          Recaudo, boletas y métodos de pago del periodo. Usa el menú para cambiar de módulo.
+        </p>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full min-w-0 max-w-[1200px]">
         <FiltersBar
           rifas={rifas}
           selectedRifa={selectedRifa}
@@ -153,12 +140,10 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
         />
 
         {error && !loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="text-red-600 font-medium text-center max-w-md">{error}</div>
+          <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-4 bg-white border-[1.5px] border-black px-4">
+            <div className="text-red-700 font-medium text-center max-w-md text-sm sm:text-base">{error}</div>
             <button
               onClick={() => {
-                setFechaInicio((v) => v);
-                setSelectedRifa((v) => v);
                 setError(null);
                 setLoading(true);
                 getReporteRifa(selectedRifa!, fechaInicio, fechaFin, scope, extraFilters)
@@ -168,25 +153,29 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
                   )
                   .finally(() => setLoading(false));
               }}
-              className="px-5 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+              className="px-5 py-2.5 bg-[var(--primary)] text-black border-[1.5px] border-black font-bold uppercase text-sm hover:brightness-95"
             >
               Reintentar
             </button>
           </div>
         ) : loading && !data ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="text-slate-400 animate-pulse font-light text-lg">Procesando métricas...</div>
+          <div className="flex justify-center items-center py-16 sm:py-20 bg-white border-[1.5px] border-black">
+            <div className="text-slate-500 animate-pulse font-medium text-sm">Procesando métricas...</div>
           </div>
         ) : data ? (
-          <div className={`space-y-6 ${loading ? 'opacity-50 pointer-events-none' : 'transition-opacity duration-300'}`}>
+          <div className={`space-y-4 sm:space-y-6 min-w-0 ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
             <KPISection data={data} fechaInicio={fechaInicio} fechaFin={fechaFin} scope={scope} extraFilters={extraFilters} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <MethodsChart methods={data.metodos_pago} serieDiaria={data.serie_diaria} fechaInicio={fechaInicio} fechaFin={fechaFin} />
-              <TicketsChart resumen={data.resumen_boletas} boletasPeriodo={data.boletas_periodo} hayFiltro={!!(fechaInicio && fechaFin)} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
+              <div className="min-w-0 overflow-hidden">
+                <MethodsChart methods={data.metodos_pago} serieDiaria={data.serie_diaria} fechaInicio={fechaInicio} fechaFin={fechaFin} />
+              </div>
+              <div className="min-w-0 overflow-hidden">
+                <TicketsChart resumen={data.resumen_boletas} boletasPeriodo={data.boletas_periodo} hayFiltro={!!(fechaInicio && fechaFin)} />
+              </div>
             </div>
           </div>
         ) : null}
-      </main>
+      </div>
     </div>
   );
 }

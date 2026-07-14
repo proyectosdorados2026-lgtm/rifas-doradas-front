@@ -16,23 +16,23 @@ function KPICard({ title, value, subtitle, icon, color, expanded, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className={`text-left w-full rounded-2xl shadow-sm border p-6 flex flex-col gap-3 transition-all duration-200 cursor-pointer
-        ${expanded ? `${c.bg} ${c.border} ring-2 ring-${color === 'green' ? 'emerald' : color}-300` : `bg-white border-slate-200 hover:shadow-md hover:${c.border}`}`}
+      className={`text-left w-full border-[1.5px] border-black p-4 sm:p-5 flex flex-col gap-2 sm:gap-3 transition-all duration-200 cursor-pointer min-w-0
+        ${expanded ? `${c.bg} shadow-[3px_3px_0_#101010]` : `bg-white hover:shadow-[3px_3px_0_#101010]`}`}
     >
-      <div className="flex items-center justify-between">
-        <div className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center`}>
-          <span className="text-lg">{icon}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className={`w-9 h-9 sm:w-10 sm:h-10 ${c.iconBg} flex items-center justify-center border border-black shrink-0`}>
+          <span className="text-base sm:text-lg">{icon}</span>
         </div>
-        <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''} text-slate-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-4 h-4 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''} text-slate-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      <div>
-        <h3 className="text-sm font-medium text-slate-500">{title}</h3>
-        <p className={`text-2xl font-semibold ${c.text} mt-1`}>{value}</p>
+      <div className="min-w-0">
+        <h3 className="text-xs sm:text-sm font-medium text-slate-500 truncate">{title}</h3>
+        <p className={`text-xl sm:text-2xl font-semibold ${c.text} mt-1 break-all`}>{value}</p>
       </div>
       {expanded && subtitle && (
-        <div className={`text-sm ${c.text} font-medium bg-white/60 rounded-lg px-3 py-2 mt-1 border ${c.border}`}>
+        <div className={`text-xs sm:text-sm ${c.text} font-medium bg-white/60 px-3 py-2 mt-1 border ${c.border} break-words`}>
           {subtitle}
         </div>
       )}
@@ -88,27 +88,27 @@ export default function KPISection({ data, fechaInicio, fechaFin, scope = 'globa
   const toggle = (id) => setExpandedCard(prev => prev === id ? null : id);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 min-w-0">
       {/* Periodo activo */}
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
+        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{periodoLabel}</span>
+        <span className="break-all">{periodoLabel}</span>
         {hayFiltro && (
-          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 font-medium">
             Filtrado
           </span>
         )}
         {precioBoleta > 0 && (
-          <span className="ml-auto text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
+          <span className="sm:ml-auto text-xs bg-slate-100 text-slate-600 px-2 py-1">
             Boleta: {fmt(precioBoleta)}
           </span>
         )}
       </div>
 
       {/* Fila 1: Finanzas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 min-w-0">
         <KPICard
           title="Recaudo Real"
           value={fmt(recaudoReal)}
@@ -189,7 +189,7 @@ export default function KPISection({ data, fechaInicio, fechaFin, scope = 'globa
       />
 
       {/* Fila 2: Boletas por estado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 min-w-0">
         <KPICard
           title={hayFiltro ? 'Pagadas en periodo' : 'Boletas Pagadas'}
           value={pagadas.toLocaleString()}
@@ -241,12 +241,12 @@ export default function KPISection({ data, fechaInicio, fechaFin, scope = 'globa
       </div>
 
       {/* Barra de progreso visual (siempre muestra estado global) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-slate-600">
+      <div className="bg-white border-[1.5px] border-black p-3 sm:p-5 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3 min-w-0">
+          <span className="text-xs sm:text-sm font-medium text-slate-600 break-words">
             Distribución de Boletas {hayFiltro ? '(estado actual global)' : ''}
           </span>
-          <span className="text-xs text-slate-400">{totalBoletas.toLocaleString()} total</span>
+          <span className="text-xs text-slate-400 shrink-0">{totalBoletas.toLocaleString()} total</span>
         </div>
         <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden flex">
           {pagadasGlobal > 0 && (

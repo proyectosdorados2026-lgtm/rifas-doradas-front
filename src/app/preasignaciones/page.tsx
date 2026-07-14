@@ -272,30 +272,31 @@ export default function PreasignacionesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen">
+      <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl">
+      <header className="mb-6 border-b-[1.5px] border-black pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <button onClick={() => router.push('/dashboard')} className="text-sm text-slate-500 hover:text-slate-800 mb-1">
-              ← Dashboard
-            </button>
-            <h1 className="text-xl font-bold text-slate-900">Boletas Preasignadas</h1>
-            <p className="text-xs text-slate-500">
-              Busca un cliente y asígnale los números que siempre pide. Se aplican todos de un clic cuando salga la próxima rifa.
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Operación</p>
+            <h1 className="text-2xl font-[800] tracking-tight mt-1" style={{ fontFamily: 'var(--font-display)' }}>
+              Boletas preasignadas
+            </h1>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-xl">
+              Asigna números favoritos de un cliente y aplícalos en la próxima rifa.
             </p>
           </div>
           <div className="flex items-center gap-2">
             {esSuperAdmin && (
               <button
                 onClick={abrirAplicar}
-                className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 text-sm"
+                className="px-4 py-2.5 bg-[var(--primary)] text-black border-[1.5px] border-black font-bold uppercase text-xs tracking-wider shadow-[3px_3px_0_#101010]"
               >
                 Asignar a la nueva rifa
               </button>
             )}
             <button
               onClick={() => setShowBuscarCliente(true)}
-              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 text-sm"
+              className="px-4 py-2.5 bg-black text-[var(--primary)] border-[1.5px] border-black font-bold uppercase text-xs tracking-wider"
             >
               + Buscar cliente
             </button>
@@ -303,8 +304,8 @@ export default function PreasignacionesPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+      <main>
+        <div className="bg-[var(--surface-elevated)] border-[1.5px] border-black p-5 mb-6 shadow-[4px_4px_0_#101010]">
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Filtrar por cliente o número ({totalNumeros} número{totalNumeros !== 1 ? 's' : ''} preasignado{totalNumeros !== 1 ? 's' : ''})
           </label>
@@ -560,6 +561,7 @@ export default function PreasignacionesPage() {
           onCancel={() => !(procesando || aplicando) && setConfirm(null)}
         />
       )}
+      </div>
     </div>
   )
 }

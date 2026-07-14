@@ -3,6 +3,7 @@
 export interface BoletaDisponible {
   id: string
   numero: number
+  numeros?: number[]
   estado: 'DISPONIBLE'
   qr_url: string
   barcode: string
@@ -58,6 +59,7 @@ export interface ClienteSimilar extends Cliente {
 export interface BoletaEnCarrito {
   id: string
   numero: number
+  numeros?: number[]
   precio: number
   reserva_token: string
   bloqueo_hasta: string

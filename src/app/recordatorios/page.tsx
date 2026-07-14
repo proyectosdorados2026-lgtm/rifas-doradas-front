@@ -5,68 +5,40 @@ import { useRouter } from 'next/navigation'
 import RecordatoriosList from '@/components/RecordatoriosList'
 
 export default function RecordatoriosPage() {
-  const [authorized, setAuthorized] = useState(false)
   const router = useRouter()
+  const [ok, setOk] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-
-    if (!token || !userData) {
+    if (!token) {
       router.push('/login')
       return
     }
-
-    try {
-      const user = JSON.parse(userData)
-      const rol = user.rol?.toUpperCase()
-      if (['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'].includes(rol || '')) {
-        setAuthorized(true)
-      } else {
-        router.push('/dashboard')
-      }
-    } catch {
-      router.push('/login')
-    }
+    setOk(true)
   }, [router])
 
-  if (!authorized) {
+  if (!ok) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-slate-500 text-sm">Cargando...</span>
+      <div className="px-4 py-16 flex justify-center">
+        <div className="border-[1.5px] border-black bg-[var(--surface-elevated)] px-5 py-3 text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0_#101010]">
+          Cargando...
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-indigo-50/30">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14">
-            <div className="flex items-center gap-3">
-              <a
-                href="/dashboard"
-                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-medium"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                Dashboard
-              </a>
-              <span className="text-slate-300">/</span>
-              <span className="text-sm font-semibold text-slate-900">Recordatorios</span>
-            </div>
-          </div>
-        </div>
+    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <header className="mb-6 border-b-[1.5px] border-black pb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-muted)]">Cobranza</p>
+        <h1 className="text-2xl sm:text-3xl font-[800] tracking-tight mt-1" style={{ fontFamily: 'var(--font-display)' }}>
+          Recordatorios
+        </h1>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
+          Sigue pagos pendientes y contacta por WhatsApp.
+        </p>
       </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <RecordatoriosList />
-      </main>
+      <RecordatoriosList />
     </div>
   )
 }

@@ -12,6 +12,7 @@ import { formatearInputPesos, parsearInputPesos } from '@/utils/formatPesos'
 import { generarWhatsAppChatLink } from '@/utils/telefono'
 import { WHATSAPP_VENTAS_ACTIVO } from '@/config/features'
 import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 const MEDIOS_PAGO_MAP: Record<string, string> = {
   'd397d917-c0d0-4c61-b2b3-2ebfab7deeb7': 'Efectivo',
@@ -308,7 +309,7 @@ export default function CarritoVentas({
               {boletasVenta.map((b: any) => (
                 <div key={b.id} className="border border-slate-200 rounded-lg p-4 overflow-visible">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-bold text-slate-900">Boleta #{b.numero.toString().padStart(4, '0')}</span>
+                    <span className="font-bold text-slate-900">Boleta {formatBoletaNumeros(b.numeros, b.numero)}</span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => descargarBoleta(b.numero, cliente.identificacion || '', `boleta-print-${b.id}`)}
@@ -337,6 +338,7 @@ export default function CarritoVentas({
                   qrUrl={b.qr_url || `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=boleta-${b.id}`}
                   barcode={b.barcode || ''}
                   numero={b.numero}
+                  numeros={b.numeros}
                   imagenUrl={b.imagen_url}
                   rifaNombre={rifaNombre || ''}
                   estado={
@@ -793,7 +795,7 @@ export default function CarritoVentas({
               <div className="flex justify-between">
                 <span className="text-slate-600">Boletas ({boletas.length}):</span>
                 <span className="font-medium text-slate-900">
-                  {boletas.map(b => `#${b.numero.toString().padStart(4, '0')}`).join(', ')}
+                  {boletas.map(b => formatBoletaNumeros(b.numeros, b.numero)).join(', ')}
                 </span>
               </div>
               <div className="border-t pt-2">

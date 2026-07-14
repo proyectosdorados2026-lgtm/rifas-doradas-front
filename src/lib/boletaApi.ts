@@ -70,6 +70,27 @@ class BoletaApiService {
     })
     return this.handleResponse(response)
   }
+  async getNumerosEstado(rifaId: string): Promise<{
+    success: boolean
+    data: {
+      rifa_id: string
+      doble_oportunidad: boolean
+      numeros_por_boleta: number
+      total_boletas: number
+      numeros: Array<{
+        numero: number
+        boleta_id: string
+        orden: number
+        estado: string
+        par: number[]
+      }>
+    }
+  }> {
+    const response = await fetch(`${API_BASE_URL}/api/boletas/rifa/${rifaId}/numeros-estado`, {
+      headers: this.getAuthHeaders()
+    })
+    return this.handleResponse(response)
+  }
 }
 
 export const boletaApi = new BoletaApiService()

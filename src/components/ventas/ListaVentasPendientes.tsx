@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import RegistrarAbono from './RegistrarAbono'
 import { ventasApi } from '@/lib/ventasApi'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface BoletaInfo {
   id: string
   numero: number
+  numeros?: number[]
   estado: string
   rifa_nombre: string
 }
@@ -157,7 +159,11 @@ export default function ListaVentasPendientes({
                     {venta.boletas && venta.boletas.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 my-1.5">
                         {venta.boletas.map((b) => {
-                          const esBoletaBuscada = boletaDestacada != null && b.numero === boletaDestacada
+                          const nums = Array.isArray(b.numeros) && b.numeros.length > 0
+                            ? b.numeros
+                            : [b.numero]
+                          const esBoletaBuscada =
+                            boletaDestacada != null && nums.includes(boletaDestacada)
                           return (
                           <span
                             key={b.id}
@@ -170,7 +176,7 @@ export default function ListaVentasPendientes({
                                 'bg-slate-100 text-slate-600'
                             }`}
                           >
-                            🎫 #{b.numero.toString().padStart(4, '0')}
+                            🎫 {formatBoletaNumeros(b.numeros, b.numero)}
                             {esBoletaBuscada && <span>← buscada</span>}
                             <span className="opacity-70">
                               {b.estado === 'PAGADA' ? '✅' :

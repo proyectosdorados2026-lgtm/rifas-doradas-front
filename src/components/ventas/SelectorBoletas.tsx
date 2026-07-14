@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ventasApi } from '@/lib/ventasApi'
 import { BoletaDisponible, BoletaEnCarrito, BoletaBloqueada } from '@/types/ventas'
+import { formatBoletaNumeros, searchMatchesNumeros, normalizeNumeros } from '@/utils/formatBoletaNumeros'
 
 
 interface SelectorBoletasProps {
@@ -34,6 +35,11 @@ export default function SelectorBoletas({
   const [boletasPorPagina] = useState(20)
   const [bloqueando, setBloqueando] = useState<Set<string>>(new Set())
   const intervalosRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
+  const seleccionadasIdsRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    seleccionadasIdsRef.current = new Set(boletasSeleccionadas.map((b) => b.id))
+  }, [boletasSeleccionadas])
 
   // ── Ruleta ──────────────────────────────────────────────────────────────
   const [mostrarRuleta, setMostrarRuleta] = useState(false)
@@ -46,46 +52,52 @@ export default function SelectorBoletas({
 
 
   // Cargar boletas disponibles
-  const cargarBoletasDisponibles = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const cargarBoletasDisponibles = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = Boolean(opts?.silent)
+    if (!silent) {
+      setLoading(true)
+      setError(null)
+    }
     
     try {
       const response = await ventasApi.getBoletasDisponibles(rifaId)
       const boletas = response.data || []
 
-      // El endpoint /disponibles ya devuelve solo boletas DISPONIBLE (campos mínimos)
-      const boletasDisponibles = boletas.map((boleta: any) => ({
-        id: boleta.id,
-        numero: boleta.numero,
-        estado: 'DISPONIBLE' as const,
-        qr_url: boleta.qr_url || '',
-        barcode: boleta.barcode || '',
-        imagen_url: boleta.imagen_url,
-        rifa_nombre: '',
-        rifa_id: rifaId,
-        precio: 0
-      }))
+      const enCarrito = seleccionadasIdsRef.current
+
+      // El endpoint /disponibles ya excluye bloqueos vigentes (admin o web pública)
+      const boletasDisponibles = boletas
+        .filter((boleta: any) => !enCarrito.has(boleta.id))
+        .map((boleta: any) => ({
+          id: boleta.id,
+          numero: boleta.numero,
+          numeros: Array.isArray(boleta.numeros) ? boleta.numeros.map(Number) : [Number(boleta.numero)],
+          estado: 'DISPONIBLE' as const,
+          qr_url: boleta.qr_url || '',
+          barcode: boleta.barcode || '',
+          imagen_url: boleta.imagen_url,
+          rifa_nombre: '',
+          rifa_id: rifaId,
+          precio: 0
+        }))
       
       setBoletasDisponibles(boletasDisponibles)
       
-      // Si no hay boletas disponibles, mostrar mensaje informativo
-      if (boletasDisponibles.length === 0) {
+      if (!silent && boletasDisponibles.length === 0) {
         setError('No hay boletas disponibles en este momento.')
       }
     } catch (error: any) {
-      console.error('Error cargando boletas:', error)
-      
-      // Verificar si es un error de endpoint no encontrado
-      if (error.message && error.message.includes('Endpoint no encontrado')) {
-        setError('El endpoint de boletas no está disponible. Contacte al administrador.')
-      } else {
-        setError('Error cargando boletas disponibles')
+      if (!silent) {
+        console.warn('Error cargando boletas:', error)
+        if (error.message && error.message.includes('Endpoint no encontrado')) {
+          setError('El endpoint de boletas no está disponible. Contacte al administrador.')
+        } else {
+          setError('Error cargando boletas disponibles')
+        }
+        setBoletasDisponibles([])
       }
-      
-      setBoletasDisponibles([]) // Establecer array vacío en caso de error
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [rifaId])
 
@@ -96,14 +108,13 @@ export default function SelectorBoletas({
     setBloqueando(prev => new Set(prev).add(boleta.id))
     
     try {
-      // Bloquear la boleta
-      const response = await ventasApi.bloquearBoleta(boleta.id, 15) // 15 minutos
+      const response = await ventasApi.bloquearBoleta(boleta.id, 15)
       const bloqueo = response.data
       
-      // Agregar al carrito
       const boletaEnCarrito: BoletaEnCarrito = {
         id: boleta.id,
         numero: boleta.numero,
+        numeros: normalizeNumeros((boleta as any).numeros, boleta.numero),
         precio: precioBoleta,
         reserva_token: bloqueo.reserva_token,
         bloqueo_hasta: bloqueo.bloqueo_hasta,
@@ -113,40 +124,50 @@ export default function SelectorBoletas({
       }
       
       onBoletaSeleccionada(boletaEnCarrito)
-      
-      // Remover de disponibles
       setBoletasDisponibles(prev => prev.filter(b => b.id !== boleta.id))
+      setError(null)
       
-      // Iniciar verificación periódica del bloqueo
       const intervalId = await ventasApi.verificarBloqueoPeriodico(
-  boleta.id,
-  bloqueo.reserva_token,
-  (valid) => {
-    if (!valid) {
-      onBoletaRemovida(boleta.id)
-      setBoletasDisponibles(prev => [...prev, boleta])
-
-      const interval = intervalosRef.current.get(boleta.id)
-      if (interval) {
-        clearInterval(interval)
-        intervalosRef.current.delete(boleta.id)
-      }
-    }
-  }
-)
-
-intervalosRef.current.set(boleta.id, intervalId)
-
-      
+        boleta.id,
+        bloqueo.reserva_token,
+        (valid) => {
+          if (!valid) {
+            onBoletaRemovida(boleta.id)
+            setBoletasDisponibles(prev => [...prev, boleta])
+            const interval = intervalosRef.current.get(boleta.id)
+            if (interval) {
+              clearInterval(interval)
+              intervalosRef.current.delete(boleta.id)
+            }
+          }
+        }
+      )
+      intervalosRef.current.set(boleta.id, intervalId)
     } catch (error: any) {
+      const code = error?.code || error?.response?.data?.error
       const apiMsg =
         error?.response?.data?.message ||
         error?.message ||
         'No se pudo bloquear la boleta.'
-      setError(apiMsg)
-      console.error('Error bloqueando boleta:', error)
-      // refrescar lista inmediatamente
-      // cargarBoletasDisponibles()
+
+      // Si ya la tomó la web pública u otro vendedor: quitarla ya de la lista
+      if (
+        code === 'BOLETA_ALREADY_BLOCKED' ||
+        /ya está bloqueada|already blocked/i.test(String(apiMsg))
+      ) {
+        setBoletasDisponibles((prev) => prev.filter((b) => b.id !== boleta.id))
+        setError('Ese número acaba de reservarse en otra sesión (web o admin). Ya no está disponible.')
+        void cargarBoletasDisponibles({ silent: true })
+      } else if (
+        code === 'BOLETA_ALREADY_SOLD' ||
+        /ya está vendida|already sold/i.test(String(apiMsg))
+      ) {
+        setBoletasDisponibles((prev) => prev.filter((b) => b.id !== boleta.id))
+        setError('Esa boleta ya no está disponible.')
+        void cargarBoletasDisponibles({ silent: true })
+      } else {
+        setError(apiMsg)
+      }
     } finally {
       setBloqueando(prev => {
         const newSet = new Set(prev)
@@ -275,16 +296,9 @@ if (interval) {
   }, [])
 
   // Filtrar boletas por búsqueda
-  const boletasFiltradas = (boletasDisponibles || []).filter(boleta => {
-    if (!busqueda) return true
-    const termino = busqueda.replace(/^#/, '').trim()
-    if (!termino) return true
-    // Comparar contra el número sin ceros y con ceros (padded a 4 dígitos)
-    const numStr = boleta.numero.toString()
-    const numPadded = numStr.padStart(4, '0')
-    const terminoLimpio = termino.replace(/^0+/, '') || '0' // quitar ceros iniciales del término
-    return numStr.includes(terminoLimpio) || numPadded.includes(termino)
-  })
+  const boletasFiltradas = (boletasDisponibles || []).filter(boleta =>
+    searchMatchesNumeros((boleta as any).numeros, busqueda, boleta.numero)
+  )
 
   // Paginación
   const totalPaginas = Math.ceil(boletasFiltradas.length / boletasPorPagina)
@@ -344,15 +358,13 @@ useEffect(() => {
 
 
 
-  // Actualización periódica de disponibles
+  // Actualización periódica de disponibles (web pública + otros vendedores)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (boletasDisponibles.length >= 0) { // Solo actualizar si hay datos
-        cargarBoletasDisponibles()
-      }
-    }, 30000) // 30 segundos
+      void cargarBoletasDisponibles({ silent: true })
+    }, 5000)
     return () => clearInterval(interval)
-  }, [cargarBoletasDisponibles, boletasDisponibles.length])
+  }, [cargarBoletasDisponibles])
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
@@ -376,7 +388,7 @@ useEffect(() => {
             Boleta al Azar
           </button>
           <button
-            onClick={cargarBoletasDisponibles}
+            onClick={() => cargarBoletasDisponibles()}
             disabled={loading}
             className="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 disabled:opacity-50"
           >
@@ -416,7 +428,7 @@ useEffect(() => {
               >
                 <div>
 <div className="font-medium text-blue-900">
-  #{String(boleta.numero).padStart(4, '0')}
+  {formatBoletaNumeros((boleta as any).numeros, boleta.numero)}
 </div>                  <div className="text-xs text-blue-700">
                     Bloqueada hasta: {new Date(boleta.bloqueo_hasta).toLocaleTimeString()}
                   </div>
@@ -479,8 +491,8 @@ useEffect(() => {
               className="bg-white border-2 border-slate-200 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-center">
-                <div className="text-lg font-bold text-slate-900">
-                  #{boleta.numero.toString().padStart(4, '0')}
+                <div className="text-sm font-bold text-slate-900 leading-tight">
+                  {formatBoletaNumeros((boleta as any).numeros, boleta.numero)}
                 </div>
                 <div className="text-xs text-slate-600 mt-1">
                   ${precioBoleta.toLocaleString('es-CO')}
@@ -599,16 +611,20 @@ useEffect(() => {
                       #{' '}
                     </span>
                     <span
-                      className="text-white font-black leading-none"
+                      className="text-white font-black leading-none text-center px-2"
                       style={{
-                        fontSize: '2.6rem',
+                        fontSize: faseRuleta === 'resultado' && boletaRuleta?.numeros && boletaRuleta.numeros.length > 1
+                          ? '1.1rem'
+                          : '2.6rem',
                         letterSpacing: '-0.02em',
                         fontVariantNumeric: 'tabular-nums',
                         filter: faseRuleta === 'girando' ? 'blur(0.5px)' : 'none',
                         transition: 'filter 0.2s',
                       }}
                     >
-                      {String(numeroMostrado).padStart(4, '0')}
+                      {faseRuleta === 'resultado' && boletaRuleta
+                        ? formatBoletaNumeros(boletaRuleta.numeros, boletaRuleta.numero)
+                        : String(numeroMostrado).padStart(4, '0')}
                     </span>
                     {faseRuleta === 'resultado' && (
                       <span className="text-emerald-300 text-xs font-bold mt-1">✓ Disponible</span>

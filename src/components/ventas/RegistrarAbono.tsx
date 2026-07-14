@@ -11,6 +11,7 @@ import { formatearInputPesos, parsearInputPesos } from '@/utils/formatPesos'
 import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
 import { generarWhatsAppChatLink } from '@/utils/telefono'
 import { WHATSAPP_VENTAS_ACTIVO } from '@/config/features'
+import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 
 interface Props {
   ventaId: string
@@ -52,6 +53,7 @@ interface AbonoVenta {
 interface BoletaVenta {
   id: string
   numero: number
+  numeros?: number[]
   estado: string
   bloqueo_hasta?: string | null
   precio_boleta?: number
@@ -86,7 +88,7 @@ function claveTransaccionAbono(createdAt: string) {
   return `${fecha.getFullYear()}-${fecha.getMonth()}-${fecha.getDate()}-${fecha.getHours()}-${fecha.getMinutes()}`
 }
 
-function getUltimaTransaccionAbono(abonos: AbonoVenta[]) {
+function getUltimaTransaccionAbono(abonos: AbonoVenta[], boletas?: BoletaVenta[]) {
   const activos = abonos.filter((a) => a.estado !== 'ANULADO')
   if (activos.length === 0) return null
 
@@ -99,14 +101,21 @@ function getUltimaTransaccionAbono(abonos: AbonoVenta[]) {
 
   const ultimoGrupo = [...grupos.values()].pop()!
   const montoTotal = ultimoGrupo.reduce((sum, a) => sum + Number(a.monto), 0)
-  const boletasNumeros = [...new Set(ultimoGrupo.map((a) => a.boleta_numero).filter((n) => n != null))].sort(
-    (a, b) => Number(a) - Number(b)
-  )
+  const labels = [
+    ...new Set(
+      ultimoGrupo.map((a) => {
+        const b = boletas?.find((x) => x.id === a.boleta_id)
+        if (b) return formatBoletaNumeros(b.numeros, b.numero)
+        if (a.boleta_numero != null) return `#${String(a.boleta_numero).padStart(4, '0')}`
+        return null
+      }).filter(Boolean) as string[]
+    ),
+  ]
   const referencia = ultimoGrupo[0]
 
   return {
     montoTotal,
-    boletasNumeros,
+    boletasLabels: labels,
     fecha: referencia.created_at,
     metodoPago: referencia.metodo_pago || referencia.gateway_pago || 'N/A',
     registradoPor: referencia.registrado_por_nombre || 'No registrado',
@@ -263,7 +272,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
 
         const saldoB = boletaInfo.saldo_pendiente_boleta ?? 0
         if (montoB > saldoB + 0.01) {
-          setError(`El monto de la boleta #${boletaInfo.numero.toString().padStart(4, '0')} ($${montoB.toLocaleString('es-CO')}) excede su saldo ($${saldoB.toLocaleString('es-CO')})`)
+          setError(`El monto de la boleta ${formatBoletaNumeros(boletaInfo.numeros, boletaInfo.numero)} ($${montoB.toLocaleString('es-CO')}) excede su saldo ($${saldoB.toLocaleString('es-CO')})`)
           return
         }
 
@@ -299,10 +308,15 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
         setNotas('')
         setAccion(null)
 
-        const numerosAbonados = boletasAbono.map((ba) => {
-          const b = ventaActualizada.boletas?.find((x) => x.id === ba.boleta_id)
-          return b?.numero ?? 0
-        })
+        const numerosAbonados = [
+          ...new Set(
+            boletasAbono.flatMap((ba) => {
+              const b = ventaActualizada.boletas?.find((x) => x.id === ba.boleta_id)
+              if (b?.numeros?.length) return b.numeros
+              return [b?.numero ?? 0]
+            })
+          ),
+        ]
 
         const esPagoTotal = ventaActualizada.saldo_pendiente <= 0
         const mpLabel = MEDIOS_PAGO.find((m) => m.id === metodoPago)?.label || metodoPago
@@ -478,7 +492,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
             <p className="text-slate-600 mt-1">
               Se registró <span className="font-semibold text-green-700">${exitoReciente.monto.toLocaleString('es-CO')}</span>
               {exitoReciente.boletaNumeros && exitoReciente.boletaNumeros.length > 0 && (
-                <> en {exitoReciente.boletaNumeros.length} boleta{exitoReciente.boletaNumeros.length > 1 ? 's' : ''}</>
+                <> en {formatBoletaNumeros(exitoReciente.boletaNumeros)}</>
               )}
             </p>
             {venta.saldo_pendiente > 0 ? (
@@ -515,7 +529,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div>
                       <span className="font-bold text-slate-900">
-                        Boleta #{b.numero.toString().padStart(4, '0')}
+                        Boleta {formatBoletaNumeros((b as any).numeros, b.numero)}
                       </span>
                       <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                         {b.estado}
@@ -548,6 +562,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                       qrUrl={b.qr_url || `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=boleta-${b.id}`}
                       barcode=""
                       numero={b.numero}
+                      numeros={(b as any).numeros}
                       imagenUrl={b.imagen_url}
                       rifaNombre={venta.rifa_nombre || ''}
                       estado={estadoBoletaTicket(b)}
@@ -615,7 +630,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
     return grupos.size
   })()
 
-  const ultimaTransaccion = getUltimaTransaccionAbono(venta.abonos)
+  const ultimaTransaccion = getUltimaTransaccionAbono(venta.abonos, venta.boletas)
 
   // Mapa para obtener datos de boleta desde un abono (usando boleta_id)
   const boletasPorId: Record<string, {
@@ -692,7 +707,9 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                 key={boleta.id}
                 className="border-2 border-slate-200 rounded-xl p-4 text-center hover:border-slate-300 transition-colors bg-slate-50/50 flex flex-col gap-2"
               >
-                <div className="text-2xl font-bold text-slate-800">#{boleta.numero.toString().padStart(4, '0')}</div>
+                <div className="text-lg sm:text-xl font-bold text-slate-800 font-mono leading-tight">
+                  {formatBoletaNumeros(boleta.numeros, boleta.numero)}
+                </div>
 
                 <span className="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold
                   bg-slate-100 text-slate-700">
@@ -703,7 +720,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                   <div className="mt-2 h-16 flex items-center justify-center">
                     <img
                       src={getStorageImageUrl(boleta.imagen_url) ?? getStorageImageUrl(boleta.qr_url) ?? boleta.imagen_url ?? boleta.qr_url}
-                      alt={`Boleta ${boleta.numero.toString().padStart(4, '0')}`}
+                      alt={`Boleta ${formatBoletaNumeros(boleta.numeros, boleta.numero)}`}
                       className="max-h-14 w-auto object-contain"
                     />
                   </div>
@@ -908,12 +925,12 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Boletas abonadas</div>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {ultimaTransaccion.boletasNumeros.map((num) => (
+                    {ultimaTransaccion.boletasLabels.map((label) => (
                       <span
-                        key={num}
+                        key={label}
                         className="inline-flex items-center rounded-md bg-white border border-emerald-200 px-2 py-1 font-mono text-sm font-bold text-emerald-800"
                       >
-                        #{String(num).padStart(4, '0')}
+                        {label}
                       </span>
                     ))}
                   </div>
@@ -1051,7 +1068,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                   return (
                     <div key={bId} className="flex items-center justify-between text-sm">
                       <span className="text-blue-800 font-medium">
-                        🎫 #{b.numero.toString().padStart(4, '0')}
+                        🎫 {formatBoletaNumeros(b.numeros, b.numero)}
                         <span className="text-blue-600 ml-1 text-xs">(saldo: ${(b.saldo_pendiente_boleta || 0).toLocaleString('es-CO')})</span>
                       </span>
                       <span className="font-semibold text-blue-900">
@@ -1210,7 +1227,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                             const b = venta?.boletas?.find(x => x.id === bId)
                             return b ? (
                               <div key={bId} className="flex justify-between text-xs bg-slate-50 p-1.5 rounded">
-                                <span>#{b.numero.toString().padStart(4, '0')}</span>
+                                <span>{formatBoletaNumeros(b.numeros, b.numero)}</span>
                                 <span className="font-medium">${m.toLocaleString('es-CO')}</span>
                               </div>
                             ) : null

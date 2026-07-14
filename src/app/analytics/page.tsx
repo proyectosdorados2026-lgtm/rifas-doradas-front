@@ -45,16 +45,17 @@ export default function Page() {
 
     const fetchAll = async () => {
       try {
-        const res = await rifaApi.getRifas();
-        setRifas(res.data);
-        if (role === 'SUPER_ADMIN') {
-          try {
-            const vRes = await vendedoresStatsApi.list();
-            setVendedores(vRes.data || []);
-          } catch (e) {
-            console.error('Error cargando vendedores para filtro', e);
-          }
-        }
+        const [rifasRes, usuariosRes] = await Promise.all([
+          rifaApi.getRifas(),
+          role === 'SUPER_ADMIN'
+            ? vendedoresStatsApi.list().catch((e) => {
+                console.error('Error cargando usuarios para filtro', e);
+                return { data: [] as VendedorStats[] };
+              })
+            : Promise.resolve({ data: [] as VendedorStats[] }),
+        ]);
+        setRifas(rifasRes.data || []);
+        setVendedores(usuariosRes.data || []);
       } catch (error) {
         console.error("Error cargando rifas", error);
       } finally {
@@ -66,28 +67,28 @@ export default function Page() {
   }, [router]);
 
   if (accesoDenegado) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-8 max-w-md text-center">
+    <div className="flex items-center justify-center p-8">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 max-w-md text-center">
         <h2 className="text-xl font-bold text-slate-900 mb-2">Acceso Restringido</h2>
         <p className="text-slate-500 mb-6">Este módulo no está disponible para tu rol.</p>
         <button
-          onClick={() => router.push('/dashboard')}
-          className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+          onClick={() => router.push('/mis-reportes')}
+          className="w-full py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors"
         >
-          Volver al Dashboard
+          Ir a mis reportes
         </button>
       </div>
     </div>
   );
 
   if (loading) return (
-    <div className="app-shell flex items-center justify-center">
-      <div className="text-neutral-500 font-light">Cargando módulo...</div>
+    <div className="flex items-center justify-center py-24">
+      <div className="text-slate-500">Cargando reportes...</div>
     </div>
   );
   
   if (!rifas.length) return (
-    <div className="app-shell flex items-center justify-center text-neutral-500">
+    <div className="flex items-center justify-center py-24 text-slate-500">
       No hay rifas configuradas en el sistema.
     </div>
   );

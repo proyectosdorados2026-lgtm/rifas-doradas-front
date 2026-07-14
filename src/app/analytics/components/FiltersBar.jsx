@@ -1,5 +1,21 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { vendedoresStatsApi } from '@/lib/vendedoresStatsApi';
+
+function normalizeRol(v) {
+  const raw = v?.rol ?? v?.role ?? '';
+  if (raw && typeof raw === 'object') {
+    return String(raw.name || raw.rol || '').toUpperCase().trim();
+  }
+  return String(raw).toUpperCase().trim();
+}
+
+function isActiveUser(v) {
+  if (v?.activo === false || v?.activo === 0 || v?.activo === 'false' || v?.activo === 'f') {
+    return false;
+  }
+  return true;
+}
 
 export default function FiltersBar({
   rifas,
@@ -9,17 +25,80 @@ export default function FiltersBar({
   fechaFin,
   setFechaInicio,
   setFechaFin,
-  // Filtros exclusivos de SUPER_ADMIN (opcionales)
   esSuperAdmin = false,
   vendedores = [],
   personFilter = { tipo: 'TODOS', vendedorId: null },
   setPersonFilter = () => {},
 }) {
-  // Fecha local (evita adelanto de fecha por UTC en horario nocturno Colombia)
-  const toLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const [usuariosEquipo, setUsuariosEquipo] = useState(Array.isArray(vendedores) ? vendedores : []);
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
+  const [errorUsuarios, setErrorUsuarios] = useState('');
+
+  useEffect(() => {
+    if (Array.isArray(vendedores) && vendedores.length > 0) {
+      setUsuariosEquipo(vendedores);
+      setErrorUsuarios('');
+    }
+  }, [vendedores]);
+
+  useEffect(() => {
+    if (!esSuperAdmin) return;
+    let cancelado = false;
+
+    const cargar = async () => {
+      setCargandoUsuarios(true);
+      setErrorUsuarios('');
+      try {
+        const res = await vendedoresStatsApi.list();
+        const lista = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+            ? res
+            : [];
+        if (!cancelado) {
+          if (lista.length > 0) {
+            setUsuariosEquipo(lista);
+            setErrorUsuarios('');
+          } else {
+            setErrorUsuarios('La API no devolvió usuarios del equipo.');
+          }
+        }
+      } catch (err) {
+        console.warn('No se pudieron cargar usuarios para el filtro:', err);
+        if (!cancelado) {
+          setErrorUsuarios(err?.message || 'Error al cargar admins');
+        }
+      } finally {
+        if (!cancelado) setCargandoUsuarios(false);
+      }
+    };
+
+    cargar();
+    return () => {
+      cancelado = true;
+    };
+  }, [esSuperAdmin]);
+
+  const admins = useMemo(
+    () =>
+      usuariosEquipo
+        .filter((v) => normalizeRol(v) === 'ADMIN' && isActiveUser(v))
+        .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))),
+    [usuariosEquipo]
+  );
+
+  const soloVendedores = useMemo(
+    () =>
+      usuariosEquipo
+        .filter((v) => normalizeRol(v) === 'VENDEDOR' && isActiveUser(v))
+        .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))),
+    [usuariosEquipo]
+  );
+
+  const toLocalDate = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const hoy = toLocalDate(new Date());
 
-  // Detectar qué preset está activo
   const isPresetTodo = !fechaInicio && !fechaFin;
   const isPresetHoy = fechaInicio === hoy && fechaFin === hoy;
 
@@ -31,9 +110,7 @@ export default function FiltersBar({
 
   const isPreset7 = fechaInicio === getDaysAgoDate(7) && fechaFin === hoy;
   const isPreset30 = fechaInicio === getDaysAgoDate(30) && fechaFin === hoy;
-  const isCustomRange = !isPresetTodo && !isPresetHoy && !isPreset7 && !isPreset30;
 
-  // Función para filtros rápidos de fecha
   const setDatePreset = (days) => {
     if (days === null) {
       setFechaInicio('');
@@ -47,154 +124,218 @@ export default function FiltersBar({
     setFechaInicio(toLocalDate(start));
   };
 
+  const chipBase =
+    'shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide transition-colors border-[1.5px] border-black min-h-[40px]';
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-      
-      {/* Selector de Rifa (Estilo Premium) */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-500">Rifa seleccionada</label>
-        <div className="relative">
-          <select
-            className="appearance-none bg-slate-50 border border-slate-200 text-slate-900 text-base font-medium rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full md:w-80 px-4 py-2.5 outline-none cursor-pointer transition-all"
-            value={selectedRifa || ''}
-            onChange={(e) => setSelectedRifa(e.target.value)}
-          >
-            {rifas.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.nombre}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
+    <div className="bg-[var(--surface-elevated)] border-[1.5px] border-black shadow-[4px_4px_0_#101010] p-3 sm:p-5 lg:p-6 mb-5 sm:mb-6 flex flex-col gap-4 sm:gap-5 overflow-hidden min-w-0">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-5 min-w-0">
+        <div className="flex flex-col gap-2 min-w-0 flex-1 w-full">
+          <label className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.08em] text-slate-500">
+            Rifa seleccionada
+          </label>
+          <div className="relative min-w-0">
+            <select
+              className="appearance-none bg-[var(--surface)] border-[1.5px] border-black text-slate-900 text-sm sm:text-base font-medium block w-full px-3 sm:px-4 py-2.5 pr-10 outline-none cursor-pointer min-w-0"
+              value={selectedRifa || ''}
+              onChange={(e) => setSelectedRifa(e.target.value)}
+            >
+              {rifas.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nombre}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Filtros de Fecha Ergonómicos */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-500">Periodo</label>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-200">
-            <button 
-              onClick={() => setDatePreset(null)}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${isPresetTodo ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              Todo
-            </button>
-            <button 
-              onClick={() => setDatePreset(0)}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${isPresetHoy ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              Hoy
-            </button>
-            <button 
-              onClick={() => setDatePreset(7)}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${isPreset7 ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              7 Días
-            </button>
-            <button 
-              onClick={() => setDatePreset(30)}
-              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${isPreset30 ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              30 Días
-            </button>
-          </div>
+        <div className="flex flex-col gap-2 min-w-0 w-full xl:w-auto">
+          <label className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.08em] text-slate-500">
+            Periodo
+          </label>
+          <div className="flex flex-col gap-2 sm:gap-3 min-w-0">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+              <button
+                type="button"
+                onClick={() => setDatePreset(null)}
+                className={`${chipBase} ${isPresetTodo ? 'bg-[var(--primary)] text-black' : 'bg-[var(--surface)] text-slate-700'}`}
+              >
+                Todo
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset(0)}
+                className={`${chipBase} ${isPresetHoy ? 'bg-[var(--primary)] text-black' : 'bg-[var(--surface)] text-slate-700'}`}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset(7)}
+                className={`${chipBase} ${isPreset7 ? 'bg-[var(--primary)] text-black' : 'bg-[var(--surface)] text-slate-700'}`}
+              >
+                7 Días
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset(30)}
+                className={`${chipBase} ${isPreset30 ? 'bg-[var(--primary)] text-black' : 'bg-[var(--surface)] text-slate-700'}`}
+              >
+                30 Días
+              </button>
+            </div>
 
-          {/* Calendarios nativos opcionales y discretos */}
-          <div className="flex items-center gap-2 ml-2">
-            <input 
-              type="date" 
-              value={fechaInicio} 
-              onChange={e => setFechaInicio(e.target.value)} 
-              className="bg-transparent border-none text-slate-500 text-sm focus:ring-0 cursor-pointer outline-none"
-              title="Fecha inicio"
-            />
-            <span className="text-slate-300">-</span>
-            <input 
-              type="date" 
-              value={fechaFin} 
-              onChange={e => setFechaFin(e.target.value)} 
-              className="bg-transparent border-none text-slate-500 text-sm focus:ring-0 cursor-pointer outline-none"
-              title="Fecha fin"
-            />
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-2 min-w-0">
+              <label className="flex flex-col gap-1 min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Desde</span>
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  className="w-full min-w-0 bg-[var(--surface)] border-[1.5px] border-black text-slate-800 text-sm px-3 py-2 outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1 min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Hasta</span>
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  className="w-full min-w-0 bg-[var(--surface)] border-[1.5px] border-black text-slate-800 text-sm px-3 py-2 outline-none"
+                />
+              </label>
+            </div>
           </div>
         </div>
-      </div>
       </div>
 
       {esSuperAdmin && (
-        <div className="border-t border-slate-100 pt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-500 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-2 py-0.5">
-                Super Admin
-              </span>
+        <div className="border-t-[1.5px] border-black pt-4 sm:pt-5 flex flex-col gap-3 sm:gap-4 min-w-0">
+          <label className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-black bg-[var(--primary)] border-[1.5px] border-black px-2 py-0.5">
+              Super Admin
+            </span>
+            <span className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.08em] text-slate-500">
               Filtrar por usuario
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setPersonFilter({ tipo: 'TODOS', vendedorId: null })}
-                  className={`px-4 py-1.5 text-sm rounded-md transition-colors ${personFilter.tipo === 'TODOS' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Todos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPersonFilter({ tipo: 'ADMINS', vendedorId: null })}
-                  className={`px-4 py-1.5 text-sm rounded-md transition-colors ${personFilter.tipo === 'ADMINS' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Administradores
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPersonFilter({ tipo: 'VENDEDOR', vendedorId: personFilter.vendedorId })}
-                  className={`px-4 py-1.5 text-sm rounded-md transition-colors ${personFilter.tipo === 'VENDEDOR' ? 'bg-white shadow-sm font-medium text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Vendedor
-                </button>
-              </div>
+            </span>
+          </label>
 
-              {personFilter.tipo === 'VENDEDOR' && (
-                <div className="relative">
-                  <select
-                    className="appearance-none bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-4 py-2 pr-9 outline-none cursor-pointer transition-all min-w-[220px]"
-                    value={personFilter.vendedorId || ''}
-                    onChange={(e) => setPersonFilter({ tipo: 'VENDEDOR', vendedorId: e.target.value || null })}
-                  >
-                    <option value="">— Selecciona un vendedor —</option>
-                    {vendedores
-                      .filter(v => String(v.rol).toUpperCase() === 'VENDEDOR')
-                      .map(v => (
-                        <option key={v.id} value={v.id}>
-                          {v.nombre}
-                        </option>
-                      ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+          <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+            {[
+              { tipo: 'TODOS', label: 'Todos' },
+              { tipo: 'ADMINS', label: 'Todos admins' },
+              { tipo: 'ADMIN', label: 'Un admin' },
+              { tipo: 'VENDEDOR', label: 'Vendedor' },
+            ].map((opt, idx) => (
+              <button
+                key={opt.tipo}
+                type="button"
+                onClick={() =>
+                  setPersonFilter({
+                    tipo: opt.tipo,
+                    vendedorId:
+                      personFilter.tipo === opt.tipo && (opt.tipo === 'ADMIN' || opt.tipo === 'VENDEDOR')
+                        ? personFilter.vendedorId
+                        : null,
+                  })
+                }
+                className={`${chipBase} ${idx > 0 ? '' : ''} ${
+                  personFilter.tipo === opt.tipo
+                    ? 'bg-[var(--primary)] text-black'
+                    : 'bg-[var(--surface)] text-slate-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {personFilter.tipo === 'ADMIN' && (
+            <div className="w-full min-w-0">
+              {cargandoUsuarios ? (
+                <p className="text-sm text-slate-500 py-2">Cargando admins…</p>
+              ) : admins.length === 0 ? (
+                <p className="text-sm text-red-700 py-2">
+                  {errorUsuarios || 'No hay admins activos registrados.'}
+                </p>
+              ) : (
+                <div className="border-[1.5px] border-black bg-white max-h-52 sm:max-h-56 overflow-y-auto overscroll-contain">
+                  {admins.map((v) => {
+                    const selected = personFilter.vendedorId === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setPersonFilter({ tipo: 'ADMIN', vendedorId: v.id })}
+                        className={`w-full text-left px-3 py-3 sm:py-2.5 text-sm border-b-[1.5px] border-black last:border-b-0 transition-colors min-h-[48px] ${
+                          selected
+                            ? 'bg-[var(--primary)] text-black font-bold'
+                            : 'text-slate-800 hover:bg-[var(--surface)]'
+                        }`}
+                      >
+                        <span className="block leading-tight truncate">{v.nombre || v.email}</span>
+                        {v.email ? (
+                          <span className="block text-[11px] font-normal text-slate-600 mt-0.5 truncate">
+                            {v.email}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          </div>
+          )}
+
+          {personFilter.tipo === 'VENDEDOR' && (
+            <div className="w-full min-w-0">
+              {cargandoUsuarios ? (
+                <p className="text-sm text-slate-500 py-2">Cargando vendedores…</p>
+              ) : soloVendedores.length === 0 ? (
+                <p className="text-sm text-slate-500 py-2">
+                  {errorUsuarios || 'No hay vendedores activos.'}
+                </p>
+              ) : (
+                <div className="border-[1.5px] border-black bg-white max-h-52 sm:max-h-56 overflow-y-auto overscroll-contain">
+                  {soloVendedores.map((v) => {
+                    const selected = personFilter.vendedorId === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setPersonFilter({ tipo: 'VENDEDOR', vendedorId: v.id })}
+                        className={`w-full text-left px-3 py-3 sm:py-2.5 text-sm border-b-[1.5px] border-black last:border-b-0 transition-colors min-h-[48px] ${
+                          selected
+                            ? 'bg-[var(--primary)] text-black font-bold'
+                            : 'text-slate-800 hover:bg-[var(--surface)]'
+                        }`}
+                      >
+                        <span className="truncate block">{v.nombre || v.email}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {personFilter.tipo !== 'TODOS' && (
-            <div className="text-xs text-slate-500 italic md:text-right">
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
               {personFilter.tipo === 'ADMINS'
-                ? 'Mostrando ventas agregadas de TODOS los administradores.'
-                : personFilter.vendedorId
-                  ? 'Mostrando ventas únicamente del vendedor seleccionado.'
-                  : 'Selecciona un vendedor para aplicar el filtro.'}
-            </div>
+                ? 'Ventas de todos los administradores.'
+                : personFilter.tipo === 'ADMIN'
+                  ? personFilter.vendedorId
+                    ? 'Ventas únicamente del admin seleccionado.'
+                    : 'Selecciona un admin para aplicar el filtro.'
+                  : personFilter.vendedorId
+                    ? 'Ventas únicamente del vendedor seleccionado.'
+                    : 'Selecciona un vendedor para aplicar el filtro.'}
+            </p>
           )}
         </div>
       )}

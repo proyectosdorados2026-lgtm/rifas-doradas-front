@@ -16,7 +16,8 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
     precio_boleta: 0,
     total_boletas: 0,
     fecha_sorteo: '',
-    estado: 'BORRADOR'
+    estado: 'BORRADOR',
+    doble_oportunidad: false
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -124,6 +125,12 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
     if (!rifa) {
       if (!formData.total_boletas || formData.total_boletas <= 0 || !Number.isInteger(formData.total_boletas)) {
         newErrors.total_boletas = 'El total de boletas debe ser un número entero positivo'
+      } else if (formData.doble_oportunidad) {
+        if (formData.total_boletas * 2 > 10000) {
+          newErrors.total_boletas = 'En doble oportunidad, máximo 5.000 boletas (10.000 números)'
+        }
+      } else if (formData.total_boletas < 1000 || formData.total_boletas > 10000) {
+        newErrors.total_boletas = 'El total de boletas debe estar entre 1.000 y 10.000'
       }
     }
 
@@ -275,7 +282,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
                 rifa ? 'border-slate-200 bg-slate-50 text-slate-600 cursor-not-allowed' : 
                 'border-slate-300 bg-white'
               }`}
-              placeholder="1000"
+              placeholder={formData.doble_oportunidad ? '5000' : '1000'}
               inputMode="numeric"
               pattern="[0-9]*"
             />
@@ -287,7 +294,48 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
                 El total de boletas no se puede modificar después de crear la rifa
               </p>
             )}
+            {!rifa && formData.doble_oportunidad && (
+              <p className="mt-1 text-xs text-amber-700">
+                Doble oportunidad: cada boleta tiene 2 números (máx. 5.000 boletas = 10.000 números)
+              </p>
+            )}
           </div>
+
+          {!rifa && (
+            <div className="md:col-span-2">
+              <label className="flex items-start gap-3 p-4 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.doble_oportunidad)}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setFormData((prev) => ({
+                      ...prev,
+                      doble_oportunidad: checked,
+                      total_boletas: checked
+                        ? (prev.total_boletas === 0 || prev.total_boletas > 5000 ? 5000 : prev.total_boletas)
+                        : prev.total_boletas,
+                    }))
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-slate-400"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-black">Doble oportunidad</span>
+                  <span className="block text-xs text-slate-600 mt-1">
+                    Cada boleta tendrá 2 números únicos del pool 0000–9999. Se recomienda 5.000 boletas.
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
+
+          {rifa?.doble_oportunidad && (
+            <div className="md:col-span-2">
+              <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+                Esta rifa es de <strong>doble oportunidad</strong> (2 números por boleta).
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="fecha_sorteo" className="block text-sm font-bold text-black mb-2">
