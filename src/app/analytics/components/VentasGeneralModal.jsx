@@ -9,14 +9,33 @@ const fmt = (n) => `$${Number(n).toLocaleString('es-CO')}`;
 
 /** Etiquetas pacha por boleta: ["#0004 · #1234"] */
 function labelsBoletasVenta(ventaOrAbono) {
-  const boletas = ventaOrAbono?.boletas;
+  let boletas = ventaOrAbono?.boletas;
+  // Algunos drivers devuelven json_agg como string
+  if (typeof boletas === 'string') {
+    try {
+      boletas = JSON.parse(boletas);
+    } catch {
+      boletas = null;
+    }
+  }
   if (Array.isArray(boletas) && boletas.length > 0) {
     return boletas.map((b) => formatBoletaNumeros(b.numeros, b.numero));
   }
-  // Fallback: numeros_boletas ya incluye ambos números de cada pacha
-  return (ventaOrAbono?.numeros_boletas || []).map(
-    (n) => `#${String(n).padStart(4, '0')}`
-  );
+  // Fallback: numeros_boletas puede venir plano con todos los números de la pacha
+  const flat = ventaOrAbono?.numeros_boletas || [];
+  if (flat.length > 1 && !ventaOrAbono?.cantidad_boletas) {
+    return [formatBoletaNumeros(flat.map(Number))];
+  }
+  // Si hay N boletas y 2N números, agrupar de a 2 (orden pacha)
+  const cantidad = Number(ventaOrAbono?.cantidad_boletas) || 0;
+  if (cantidad > 0 && flat.length === cantidad * 2) {
+    const labels = [];
+    for (let i = 0; i < flat.length; i += 2) {
+      labels.push(formatBoletaNumeros([Number(flat[i]), Number(flat[i + 1])]));
+    }
+    return labels;
+  }
+  return flat.map((n) => `#${String(n).padStart(4, '0')}`);
 }
 const fmtDate = (d) => {
   if (!d) return '—';
