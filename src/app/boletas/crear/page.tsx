@@ -26,7 +26,7 @@ export default function CrearBoletasPage() {
   
   // Form fields for the new parameters
   const [formData, setFormData] = useState<BoletaGenerateRequest>({
-    qr_base_url: 'https://elgrancamion.com/verificar/',
+    qr_base_url: 'https://sueñosdorados.com.co/verificar/',
     imagen_url: '',
     diseño_template: 'modern',
     modo_pareo: 'manual',
@@ -154,7 +154,7 @@ export default function CrearBoletasPage() {
       setRifas(response.data.filter(rifa => rifa.estado === 'ACTIVA'))
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar rifas')
+      setError(err instanceof Error ? err.message : 'Error al cargar proyectos')
     } finally {
       setLoading(false)
     }
@@ -164,7 +164,7 @@ export default function CrearBoletasPage() {
     e.preventDefault()
     
     if (!selectedRifa) {
-      setError('Por favor selecciona una rifa para generar boletas')
+      setError('Por favor selecciona un proyecto para generar boletas')
       return
     }
 
@@ -312,7 +312,7 @@ export default function CrearBoletasPage() {
 
   const handlePreview = () => {
     if (!selectedRifa) {
-      setError('Por favor selecciona una rifa para previsualizar')
+      setError('Por favor selecciona un proyecto para previsualizar')
       return
     }
     if (!hasImage) {
@@ -367,7 +367,7 @@ export default function CrearBoletasPage() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-medium text-slate-900 mb-4">Información de la Rifa</h2>
+          <h2 className="text-lg font-medium text-slate-900 mb-4">Información del proyecto</h2>
           
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -384,7 +384,7 @@ export default function CrearBoletasPage() {
           <form onSubmit={handleCrearBoletas} className="space-y-6">
             <div>
               <label htmlFor="rifa" className="block text-sm font-bold text-black mb-2">
-                Seleccionar Rifa Activa
+                Seleccionar Proyecto activo
               </label>
               <select
                 id="rifa"
@@ -393,7 +393,7 @@ export default function CrearBoletasPage() {
                 className="w-full px-4 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-black bg-white"
                 disabled={creating}
               >
-                <option value="">Selecciona una rifa activa...</option>
+                <option value="">Selecciona una proyecto activo...</option>
                 {rifas.map((rifa) => (
                   <option key={rifa.id} value={rifa.id}>
                     {rifa.nombre} - {rifa.premio || rifa.premio_principal} (Estado: {rifa.estado})
@@ -402,7 +402,7 @@ export default function CrearBoletasPage() {
               </select>
               {rifas.length === 0 && (
                 <p className="mt-2 text-sm text-slate-500">
-                  No hay rifas activas disponibles para generar boletas
+                  No hay proyectos activas disponibles para generar boletas
                 </p>
               )}
             </div>
@@ -417,16 +417,18 @@ export default function CrearBoletasPage() {
                     URL de Verificación (QR) *
                   </label>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
                     id="qr_base_url"
                     value={formData.qr_base_url}
                     onChange={(e) => handleInputChange('qr_base_url', e.target.value)}
-                    placeholder="https://elgrancamion.com/verificar/"
+                    placeholder="https://sueñosdorados.com.co/verificar/"
                     className="w-full px-4 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none text-black bg-white"
                     disabled={creating}
                   />
                   <p className="mt-1 text-xs text-slate-500">
-                    URL donde el cliente verá el estado de su boleta al escanear el QR. Cada boleta genera un código único.
+                    URL donde el cliente verá el estado de su boleta al escanear el QR. Se admiten dominios con ñ (ej. sueñosdorados.com.co); el sistema los convierte automáticamente para el QR.
                   </p>
                 </div>
 
@@ -507,7 +509,7 @@ export default function CrearBoletasPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-sm font-medium text-blue-900 mb-2">Información de Generación</h3>
               <div className="text-sm text-blue-800 space-y-1">
-                <p><strong>Rifa seleccionada:</strong> {rifas.find(r => r.id === selectedRifa)?.nombre}</p>
+                <p><strong>Proyecto seleccionado:</strong> {rifas.find(r => r.id === selectedRifa)?.nombre}</p>
                 <p><strong>Premio:</strong> {rifas.find(r => r.id === selectedRifa)?.premio || rifas.find(r => r.id === selectedRifa)?.premio_principal}</p>
                 <p><strong>Total de boletas:</strong> {rifas.find(r => r.id === selectedRifa)?.total_boletas || 'N/A'}</p>
                 <p><strong>Estado:</strong> {rifas.find(r => r.id === selectedRifa)?.estado}</p>
@@ -643,7 +645,7 @@ export default function CrearBoletasPage() {
               )}
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-blue-700">
-                  <strong>Nota:</strong> El sistema generará automáticamente todas las boletas para esta rifa según la configuración.
+                  <strong>Nota:</strong> El sistema generará automáticamente todas las boletas para este proyecto según la configuración.
                 </p>
               </div>
             </div>
@@ -687,8 +689,8 @@ export default function CrearBoletasPage() {
             <p>• Cada boleta tendrá un código QR único que apuntará a la URL configurada</p>
             <p>• Cada boleta tendrá un código de barras único (formato: BOLETA-[rifa_id]-0001)</p>
             <p>• La imagen de plantilla se usará como fondo para todas las boletas</p>
-            <p>• Solo puedes generar boletas una vez por rifa</p>
-            <p>• La rifa debe estar en estado "ACTIVA" para generar boletas</p>
+            <p>• Solo puedes generar boletas una vez por proyecto</p>
+            <p>• El proyecto debe estar en estado "ACTIVA" para generar boletas</p>
           </div>
         </div>
 
