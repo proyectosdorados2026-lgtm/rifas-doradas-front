@@ -316,7 +316,7 @@ export default function ClienteSearch({
                             )}
                             {boleta.rifa_estado === 'TERMINADA' && (
                               <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">
-                                Rifa terminada
+                                Proyecto terminado
                               </span>
                             )}
                           </div>
@@ -328,7 +328,7 @@ export default function ClienteSearch({
                     </div>
                   ) : (
                     <p className="mt-3 text-sm text-slate-500">
-                      Sin boletas registradas en rifas anteriores.
+                      Sin boletas registradas en proyectos anteriores.
                     </p>
                   )}
                 </div>

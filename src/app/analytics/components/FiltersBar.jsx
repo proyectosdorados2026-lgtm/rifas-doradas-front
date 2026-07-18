@@ -132,7 +132,7 @@ export default function FiltersBar({
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 sm:gap-5 min-w-0">
         <div className="flex flex-col gap-2 min-w-0 flex-1 w-full">
           <label className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.08em] text-slate-500">
-            Rifa seleccionada
+            Proyecto seleccionado
           </label>
           <div className="relative min-w-0">
             <select

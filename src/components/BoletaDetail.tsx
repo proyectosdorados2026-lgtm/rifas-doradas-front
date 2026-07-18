@@ -107,6 +107,7 @@ export default function BoletaDetail({ boleta, onPrint }: BoletaDetailProps) {
             barcode={boleta.barcode}
             numero={boleta.numero}
             numeros={boleta.numeros}
+            numeroPrincipal={(boleta as any).numero_principal}
             imagenUrl={(boleta as any).imagen_url ?? (boleta as any).imagenUrl}
             rifaNombre={boleta.rifa_nombre}
             estado={boleta.estado}
@@ -143,7 +144,7 @@ export default function BoletaDetail({ boleta, onPrint }: BoletaDetailProps) {
             </div>
             
             <div className="flex justify-between">
-              <span className="text-sm text-slate-600">Rifa:</span>
+              <span className="text-sm text-slate-600">Proyecto:</span>
               <span className="text-sm font-medium text-slate-900">{boleta.rifa_nombre}</span>
             </div>
             

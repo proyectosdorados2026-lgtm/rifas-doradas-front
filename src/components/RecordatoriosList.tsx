@@ -8,6 +8,7 @@ import { normalizarTelefono } from '@/utils/telefono'
 import {
   lineaPachaPendiente,
   mensajeRecordatorioPendiente,
+  nombreProyecto,
 } from '@/utils/whatsappMensajes'
 
 const formatCurrency = (value: number) => {
@@ -59,7 +60,7 @@ async function generarMensajeWhatsApp(
       const boletasPendientes = rifa.boletas.filter(b => b.estado === 'RESERVADA' || b.estado === 'ABONADA')
       if (boletasPendientes.length === 0) return
 
-      lineasDetalle.push(`🎟️ *${rifa.rifa_nombre}*`)
+      lineasDetalle.push(`🎟️ *${nombreProyecto(rifa.rifa_nombre)}*`)
       boletasPendientes.forEach(b => {
         lineasDetalle.push(lineaPachaPendiente({
           estado: b.estado,

@@ -148,7 +148,7 @@ export default function ListaVentasPendientes({
                 )}
                 <div className="flex justify-between items-start">
                   <div className="space-y-1 flex-1">
-                    {/* Rifa nombre si está disponible */}
+                    {/* Proyecto si está disponible */}
                     {venta.boletas && venta.boletas.length > 0 && venta.boletas[0].rifa_nombre && (
                       <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
                         {venta.boletas[0].rifa_nombre}

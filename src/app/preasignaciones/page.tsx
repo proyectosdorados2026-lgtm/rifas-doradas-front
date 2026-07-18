@@ -75,7 +75,7 @@ export default function PreasignacionesPage() {
   const [nuevoNumeroPorCliente, setNuevoNumeroPorCliente] = useState<Record<string, string>>({})
   const [editandoChip, setEditandoChip] = useState<{ id: string; valor: string } | null>(null)
 
-  // Modal "Asignar a la nueva rifa" (solo SUPER_ADMIN)
+  // Modal "Asignar a la nuevo proyecto" (solo SUPER_ADMIN)
   const [showAplicar, setShowAplicar] = useState(false)
   const [rifas, setRifas] = useState<Rifa[]>([])
   const [rifaSeleccionada, setRifaSeleccionada] = useState('')
@@ -231,7 +231,7 @@ export default function PreasignacionesPage() {
       const res = await rifaApi.getRifasOperativas()
       setRifas(res.data || [])
     } catch (e: any) {
-      setError(e.message || 'Error al cargar rifas')
+      setError(e.message || 'Error al cargar proyectos')
     } finally {
       setCargandoRifas(false)
     }
@@ -241,7 +241,7 @@ export default function PreasignacionesPage() {
     if (!rifaSeleccionada) return
     const rifa = rifas.find((r) => r.id === rifaSeleccionada)
     setConfirm({
-      title: 'Asignar boletas preasignadas a esta rifa',
+      title: 'Asignar boletas preasignadas a este proyecto',
       message: `Se intentará reservar cada número preasignado en "${rifa?.nombre}". Las boletas que ya estén vendidas, reservadas o no existan se OMITIRÁN sin tocarlas. Las que estén DISPONIBLE quedarán como una reserva formal (venta pendiente) a nombre del cliente correspondiente. ¿Continuar?`,
       type: 'warning',
       onConfirm: async () => {
@@ -282,7 +282,7 @@ export default function PreasignacionesPage() {
               Boletas preasignadas
             </h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-xl">
-              Asigna números favoritos de un cliente y aplícalos en la próxima rifa.
+              Asigna números favoritos de un cliente y aplícalos en el próximo proyecto.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function PreasignacionesPage() {
                 onClick={abrirAplicar}
                 className="px-4 py-2.5 bg-[var(--primary)] text-black border-[1.5px] border-black font-bold uppercase text-xs tracking-wider shadow-[3px_3px_0_#101010]"
               >
-                Asignar a la nueva rifa
+                Asignar al nuevo proyecto
               </button>
             )}
             <button
@@ -457,12 +457,12 @@ export default function PreasignacionesPage() {
         </div>
       )}
 
-      {/* Modal: aplicar a nueva rifa (SUPER_ADMIN) */}
+      {/* Modal: aplicar a nuevo proyecto (SUPER_ADMIN) */}
       {showAplicar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full my-8">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">Asignar boletas preasignadas a una rifa</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Asignar boletas preasignadas a un proyecto</h3>
               <button onClick={() => setShowAplicar(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
             <div className="p-6 space-y-4">
@@ -473,16 +473,16 @@ export default function PreasignacionesPage() {
                     vendidas o reservadas por otro motivo NO se tocarán; solo se reservan las que estén disponibles.
                   </p>
                   <div>
-                    <label className="block text-sm font-bold text-black mb-2">Rifa destino</label>
+                    <label className="block text-sm font-bold text-black mb-2">Proyecto destino</label>
                     {cargandoRifas ? (
-                      <p className="text-sm text-slate-500">Cargando rifas...</p>
+                      <p className="text-sm text-slate-500">Cargando proyectos...</p>
                     ) : (
                       <select
                         value={rifaSeleccionada}
                         onChange={(e) => setRifaSeleccionada(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-400 rounded-lg bg-white text-black"
                       >
-                        <option value="">Selecciona una rifa...</option>
+                        <option value="">Selecciona un proyecto...</option>
                         {rifas.map((r) => (
                           <option key={r.id} value={r.id} disabled={['TERMINADA', 'CANCELADA'].includes(r.estado)}>
                             {r.nombre} ({r.estado}){['TERMINADA', 'CANCELADA'].includes(r.estado) ? ' - no disponible' : ''}

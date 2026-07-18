@@ -1,7 +1,7 @@
 /** Panel izquierdo (QR, estado, número) */
 export const BOLETA_LEFT_WIDTH = 210
 
-/** Panel derecho (arte de la rifa) */
+/** Panel derecho (arte del proyecto) */
 export const BOLETA_RIGHT_WIDTH = 590
 
 /** Ancho total del ticket */

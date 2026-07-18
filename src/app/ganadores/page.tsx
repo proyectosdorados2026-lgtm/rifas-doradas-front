@@ -298,7 +298,7 @@ export default function GanadoresPage() {
                 numero={b.numero}
                 numeros={(b as any).numeros}
                 imagenUrl={imagen}
-                rifaNombre={b.rifa_nombre ?? 'Rifa'}
+                rifaNombre={b.rifa_nombre ?? 'Proyecto'}
                 estado={b.estado}
                 clienteInfo={b.cliente_nombre ? { nombre: b.cliente_nombre } : null}
                 deuda={esAbonada ? deuda : null}
@@ -325,7 +325,7 @@ export default function GanadoresPage() {
                 numero={b.numero}
                 numeros={(b as any).numeros}
                 imagenUrl={imagen}
-                rifaNombre={b.rifa_nombre ?? 'Rifa'}
+                rifaNombre={b.rifa_nombre ?? 'Proyecto'}
                 estado="DISPONIBLE"
                 precio={b.precio_boleta}
                 hideQr

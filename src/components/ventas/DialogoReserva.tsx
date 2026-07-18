@@ -129,7 +129,12 @@ export default function DialogoReserva({
           identificacion: cliente.identificacion || undefined,
           direccion: cliente.direccion || undefined
         },
-        boletas: boletas.map(b => b.id),
+        boletas: boletas.map((b) => ({
+          id: b.id,
+          ...(b.numero_principal != null
+            ? { numero_principal: b.numero_principal }
+            : {}),
+        })),
         dias_bloqueo: diasBloqueo,
         notas: notas || undefined
       }
@@ -268,6 +273,7 @@ export default function DialogoReserva({
                           barcode=""
                           numero={b.numero}
                           numeros={normalizeNumeros(b.numeros, b.numero)}
+                          numeroPrincipal={b.numero_principal}
                           imagenUrl={b.imagen_url}
                           rifaNombre={rifaNombre || ''}
                           estado="RESERVADA"

@@ -229,7 +229,7 @@ export default function VendedorDetallePage({ params }: { params: Promise<{ id: 
                     <tr>
                       <th className="px-4 py-2 text-left">Fecha</th>
                       <th className="px-4 py-2 text-left">Cliente</th>
-                      <th className="px-4 py-2 text-left">Rifa</th>
+                      <th className="px-4 py-2 text-left">Proyecto</th>
                       <th className="px-4 py-2 text-right">Boletas</th>
                       <th className="px-4 py-2 text-right">Monto</th>
                       <th className="px-4 py-2 text-right">Abonado</th>

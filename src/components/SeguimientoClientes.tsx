@@ -14,6 +14,7 @@ import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 import {
   lineaPachaPendiente,
   mensajeRecordatorioPendiente,
+  nombreProyecto,
 } from '@/utils/whatsappMensajes'
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
@@ -72,7 +73,7 @@ function generarUrlWhatsAppSeguimiento(cliente: ClienteSeguimiento): string | nu
       rifaMap.set(b.rifa_nombre, list)
     }
     for (const [rifaNombre, boletas] of rifaMap.entries()) {
-      lineasDetalle.push(`🎟️ *${rifaNombre}*`)
+      lineasDetalle.push(`🎟️ *${nombreProyecto(rifaNombre)}*`)
       for (const b of boletas) {
         lineasDetalle.push(lineaPachaPendiente({
           estado: b.estado,
@@ -445,7 +446,7 @@ function TarjetaCliente({ cliente, onContactoRegistrado }: {
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <th className="py-2 px-3 text-left">Boleta</th>
                 <th className="py-2 px-3 text-left">Estado</th>
-                <th className="py-2 px-3 text-left">Rifa</th>
+                <th className="py-2 px-3 text-left">Proyecto</th>
                 <th className="py-2 px-3 text-right">Precio</th>
                 <th className="py-2 px-3 text-left">Abonado</th>
                 <th className="py-2 px-3 text-right">Saldo</th>

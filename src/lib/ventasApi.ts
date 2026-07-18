@@ -61,7 +61,7 @@ class VentasApiService {
 
       if (response.status === 423 || data?.error === 'SISTEMA_EN_PAUSA') {
         serverMessage =
-          'El sistema está en pausa. Ve a Rifas y reactiva la rifa (estado ACTIVA) para poder vender boletas.'
+          'El sistema está en pausa. Ve a Proyectos y reactiva el proyecto (estado ACTIVA) para poder vender boletas.'
       }
 
       if (data?.details && Array.isArray(data.details)) {
@@ -108,13 +108,18 @@ class VentasApiService {
     return this.request<any[]>(`/boletas/rifa/${rifaId}/disponibles`)
   }
 
-  async bloquearBoleta(boletaId: string, tiempoBloqueo = 15) {
+  async bloquearBoleta(
+    boletaId: string,
+    tiempoBloqueo = 15,
+    numeroPrincipal?: number | null
+  ) {
     return this.request<BoletaBloqueada>(
       `/boletas/${boletaId}/block`,
       {
         method: 'POST',
         body: JSON.stringify({
-          tiempo_bloqueo: tiempoBloqueo
+          tiempo_bloqueo: tiempoBloqueo,
+          ...(numeroPrincipal != null ? { numero_principal: numeroPrincipal } : {}),
         })
       }
     )

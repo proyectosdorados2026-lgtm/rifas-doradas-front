@@ -5,7 +5,7 @@ import { BOLETA_WIDTH, BOLETA_DEFAULT_HEIGHT } from '@/constants/boletaDimension
 
 /**
  * Wrapper que escala visualmente un BoletaTicket para pantallas estrechas.
- * La altura se adapta al ticket real (según proporción del arte de la rifa).
+ * La altura se adapta al ticket real (según proporción del arte del proyecto).
  */
 export default function ResponsiveBoletaWrapper({ children, id }: { children: ReactNode; id?: string }) {
   const containerRef = useRef<HTMLDivElement>(null)

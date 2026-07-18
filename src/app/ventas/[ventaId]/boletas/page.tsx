@@ -182,6 +182,7 @@ export default function VentasBoletasPage() {
                       barcode=""
                       numero={boleta.numero}
                       numeros={normalizeNumeros(boleta.numeros, boleta.numero)}
+                      numeroPrincipal={(boleta as any).numero_principal}
                       imagenUrl={boleta.imagen_url}
                       rifaNombre={rifaNombre}
                       estado={boleta.estado}

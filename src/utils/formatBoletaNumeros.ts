@@ -51,3 +51,40 @@ export function normalizeNumeros(
   if (fallback != null) return [Number(fallback)]
   return []
 }
+
+export function resolveNumeroPrincipal(
+  numeros: number[] | null | undefined,
+  fallbackNumero?: number | null,
+  numeroPrincipal?: number | null
+): number | null {
+  const list = normalizeNumeros(numeros, fallbackNumero)
+  if (numeroPrincipal != null && list.includes(Number(numeroPrincipal))) {
+    return Number(numeroPrincipal)
+  }
+  if (fallbackNumero != null) return Number(fallbackNumero)
+  return list[0] ?? null
+}
+
+export function orderNumerosByPrincipal(
+  numeros: number[] | null | undefined,
+  fallbackNumero?: number | null,
+  numeroPrincipal?: number | null
+): number[] {
+  const list = normalizeNumeros(numeros, fallbackNumero)
+  const principal = resolveNumeroPrincipal(list, fallbackNumero, numeroPrincipal)
+  if (principal == null || !list.includes(principal)) return list
+  return [principal, ...list.filter((n) => n !== principal)]
+}
+
+export function getPrincipalGift(
+  numeros: number[] | null | undefined,
+  fallbackNumero?: number | null,
+  numeroPrincipal?: number | null
+): { principal: number | null; gift: number | null; ordered: number[] } {
+  const ordered = orderNumerosByPrincipal(numeros, fallbackNumero, numeroPrincipal)
+  return {
+    principal: ordered[0] ?? null,
+    gift: ordered[1] ?? null,
+    ordered,
+  }
+}

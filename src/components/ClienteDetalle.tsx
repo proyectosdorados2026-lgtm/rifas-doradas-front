@@ -15,6 +15,7 @@ import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 import {
   lineaPachaPendiente,
   mensajeRecordatorioPendiente,
+  nombreProyecto,
 } from '@/utils/whatsappMensajes'
 
 interface ClienteDetalleProps {
@@ -189,7 +190,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
     let deudaTotal = 0
 
     rifasFiltradas.forEach((rifa) => {
-      lineasDetalle.push(`🎟️ *${rifa.rifa_nombre}*`)
+      lineasDetalle.push(`🎟️ *${nombreProyecto(rifa.rifa_nombre)}*`)
       rifa.boletas.forEach((b) => {
         const esPagada = b.estado === 'PAGADA'
         const saldoReal = esPagada ? 0 : b.saldo
@@ -255,10 +256,10 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
       {rifaActual && (
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm font-bold text-green-900">
-            Rifa actual: {rifaActual.nombre}
+            Proyecto actual: {rifaActual.nombre}
           </p>
           <p className="text-sm text-green-800 mt-1">
-            Los totales y boletas principales corresponden solo a la rifa activa.
+            Los totales y boletas principales corresponden solo a la proyecto activo.
           </p>
         </div>
       )}
@@ -370,7 +371,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
               : 'border-transparent text-slate-500 hover:text-black'
           }`}
         >
-          📋 Boletas rifa actual ({resumen.total_boletas})
+          📋 Boletas proyecto actual ({resumen.total_boletas})
         </button>
         <button
           onClick={() => setActiveTab('abonos')}
@@ -401,7 +402,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
             <h3 className="text-sm font-bold text-slate-900">
-              Boletas de la rifa actual
+              Boletas de la proyecto actual
             </h3>
           </div>
 
@@ -410,8 +411,8 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
               <div className="text-4xl mb-3">🎫</div>
               <p className="text-slate-500 font-medium">
                 {filtroEstado === 'TODAS'
-                  ? 'Este cliente no tiene boletas en la rifa actual'
-                  : `No hay boletas con estado "${filtroEstado}" en la rifa actual`}
+                  ? 'Este cliente no tiene boletas en la proyecto actual'
+                  : `No hay boletas con estado "${filtroEstado}" en la proyecto actual`}
               </p>
             </div>
           ) : (
@@ -436,10 +437,10 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
               >
                 <div>
                   <h3 className="text-sm font-bold text-violet-950">
-                    Historial de rifas pasadas
+                    Historial de proyectos anteriores
                   </h3>
                   <p className="text-sm text-violet-800 mt-1">
-                    {rifasPasadas.length} rifa{rifasPasadas.length !== 1 ? 's' : ''} · {resumenPasadas?.total_boletas || 0} boleta{(resumenPasadas?.total_boletas || 0) !== 1 ? 's' : ''}
+                    {rifasPasadas.length} proyecto{rifasPasadas.length !== 1 ? 's' : ''} · {resumenPasadas?.total_boletas || 0} boleta{(resumenPasadas?.total_boletas || 0) !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <svg
@@ -499,7 +500,7 @@ export default function ClienteDetalle({ clienteId, onBack }: ClienteDetalleProp
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Fecha</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Rifa</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Proyecto</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Boleta</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase">Monto</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Medio Pago</th>

@@ -564,6 +564,7 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                       barcode=""
                       numero={b.numero}
                       numeros={(b as any).numeros}
+                      numeroPrincipal={(b as any).numero_principal}
                       imagenUrl={b.imagen_url}
                       rifaNombre={venta.rifa_nombre || ''}
                       estado={estadoBoletaTicket(b)}

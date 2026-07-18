@@ -8,6 +8,7 @@ import { normalizarTelefono } from '@/utils/telefono'
 import {
   lineaPachaPendiente,
   mensajeRecordatorioPendiente,
+  nombreProyecto,
 } from '@/utils/whatsappMensajes'
 
 interface ClienteListProps {
@@ -60,7 +61,7 @@ async function generarWhatsAppRecordatorioConDetalle(cliente: Cliente): Promise<
       const boletasPendientes = rifa.boletas.filter(b => b.estado === 'RESERVADA' || b.estado === 'ABONADA')
       if (boletasPendientes.length === 0) return
 
-      lineasDetalle.push(`🎟️ *${rifa.rifa_nombre}*`)
+      lineasDetalle.push(`🎟️ *${nombreProyecto(rifa.rifa_nombre)}*`)
       boletasPendientes.forEach(b => {
         lineasDetalle.push(lineaPachaPendiente({
           estado: b.estado,
@@ -151,10 +152,10 @@ export default function ClienteList({
       {rifaActual && (
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm font-bold text-green-900">
-            Rifa actual: {rifaActual.nombre}
+            Proyecto actual: {rifaActual.nombre}
           </p>
           <p className="text-sm text-green-800 mt-1">
-            La lista muestra solo boletas, deudas y estados de la rifa activa. Las rifas anteriores están en el detalle de cada cliente.
+            La lista muestra solo boletas, deudas y estados de la proyecto activo. Las proyectos anteriores están en el detalle de cada cliente.
           </p>
         </div>
       )}

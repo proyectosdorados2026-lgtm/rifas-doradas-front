@@ -121,7 +121,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
       newErrors.precio_boleta = 'El precio de la boleta debe ser mayor a 0'
     }
 
-    // Solo validar total_boletas cuando se está creando una nueva rifa
+    // Solo validar total_boletas cuando se está creando una nuevo proyecto
     if (!rifa) {
       if (!formData.total_boletas || formData.total_boletas <= 0 || !Number.isInteger(formData.total_boletas)) {
         newErrors.total_boletas = 'El total de boletas debe ser un número entero positivo'
@@ -180,7 +180,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-light text-slate-900">
-          {rifa ? 'Editar Rifa' : 'Nueva Rifa'}
+          {rifa ? 'Editar proyecto' : 'Nuevo proyecto'}
         </h2>
         <button
           onClick={onCancel}
@@ -194,7 +194,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <label htmlFor="titulo" className="block text-sm font-bold text-black mb-2">
-              Título de la Rifa *
+              Título del proyecto *
             </label>
             <div className="relative">
               <input
@@ -207,7 +207,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
                 className={`w-full px-4 py-2 pr-20 border rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all duration-200 text-slate-900 placeholder-slate-400 ${
                   errors.titulo ? 'border-red-300 bg-red-50' : 'border-slate-300 bg-white'
                 }`}
-                placeholder="Rifa de PlayStation 5"
+                placeholder="Proyecto PlayStation 5"
               />
               <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
                 {formData.titulo.length}/200
@@ -233,7 +233,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
                 className={`w-full px-4 py-2 pr-20 border rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all duration-200 text-slate-900 placeholder-slate-400 resize-none ${
                   errors.descripcion ? 'border-red-300 bg-red-50' : 'border-slate-300 bg-white'
                 }`}
-                placeholder="Describe los premios y detalles de la rifa..."
+                placeholder="Describe los premios y detalles del proyecto..."
               />
               <span className="absolute right-3 bottom-3 text-xs text-slate-500">
                 {formData.descripcion.length}/1000
@@ -291,7 +291,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
             )}
             {rifa && (
               <p className="mt-1 text-xs text-slate-500">
-                El total de boletas no se puede modificar después de crear la rifa
+                El total de boletas no se puede modificar después de crear el proyecto
               </p>
             )}
             {!rifa && formData.doble_oportunidad && (
@@ -332,7 +332,7 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
           {rifa?.doble_oportunidad && (
             <div className="md:col-span-2">
               <div className="px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
-                Esta rifa es de <strong>doble oportunidad</strong> (2 números por boleta).
+                Este proyecto es de <strong>doble oportunidad</strong> (2 números por boleta).
               </div>
             </div>
           )}
@@ -367,14 +367,14 @@ export default function RifaForm({ rifa, onSubmit, onCancel }: RifaFormProps) {
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none text-slate-900 bg-white"
             >
-              {/* Crear nueva rifa: solo BORRADOR y ACTIVA */}
+              {/* Crear nuevo proyecto: solo BORRADOR y ACTIVA */}
               {!rifa ? (
                 <>
                   <option value="BORRADOR">Borrador</option>
                   <option value="ACTIVA">Activa</option>
                 </>
               ) : (
-                /* Editar rifa existente - basado en estado actual */
+                /* Editar proyecto existente - basado en estado actual */
                 rifa.estado === 'BORRADOR' ? (
                   <option value="ACTIVA">Activa</option>
                 ) : rifa.estado === 'ACTIVA' ? (

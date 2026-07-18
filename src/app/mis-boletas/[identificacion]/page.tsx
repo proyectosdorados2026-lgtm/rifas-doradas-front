@@ -187,7 +187,7 @@ export default function MisBoletasPage() {
                 </p>
               )}
               <p className="text-sm text-slate-500 mt-1">
-                {totalBoletas} boleta{totalBoletas > 1 ? 's' : ''} en {rifas.length} rifa{rifas.length > 1 ? 's' : ''}
+                {totalBoletas} boleta{totalBoletas > 1 ? 's' : ''} en {rifas.length} proyecto{rifas.length > 1 ? 's' : ''}
               </p>
             </div>
 
@@ -230,6 +230,7 @@ export default function MisBoletasPage() {
                           barcode={boleta.barcode}
                           numero={boleta.numero}
                           numeros={(boleta as any).numeros}
+                          numeroPrincipal={(boleta as any).numero_principal}
                           imagenUrl={boleta.imagen_url}
                           rifaNombre={rifa.rifa_nombre}
                           estado={boleta.estado}

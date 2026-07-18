@@ -34,7 +34,7 @@ type Props = {
 };
 
 export default function AnalyticsDashboard({ rifas, scope = 'global', title, esSuperAdmin = false, vendedores = [] }: Props) {
-  const headerTitle = title ?? (scope === 'mis-ventas' ? 'Mis Reportes' : 'Análisis de Rifas');
+  const headerTitle = title ?? (scope === 'mis-ventas' ? 'Mis Reportes' : 'Análisis de proyectos');
 
   const [selectedRifa, setSelectedRifa] = useState<string | null>(
     rifas.length ? rifas[0].id : null
@@ -104,7 +104,7 @@ export default function AnalyticsDashboard({ rifas, scope = 'global', title, esS
   if (!rifas.length) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500">No hay rifas disponibles</div>
+        <div className="text-slate-500">No hay proyectos disponibles</div>
       </div>
     );
   }

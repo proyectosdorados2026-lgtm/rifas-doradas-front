@@ -94,7 +94,7 @@ export default function GanadorAsignarDirecto() {
           }
         }
       } catch {
-        setError('Error cargando rifas o usuarios')
+        setError('Error cargando proyectos o usuarios')
       }
     }
     load()
@@ -119,7 +119,7 @@ export default function GanadorAsignarDirecto() {
       )
       const result = data.data
       if (!result.encontrada) {
-        setAlertaBoleta('Boleta no encontrada en esta rifa')
+        setAlertaBoleta('Boleta no encontrada en este proyecto')
         setBoletaDisponible(false)
         return
       }
@@ -158,7 +158,7 @@ export default function GanadorAsignarDirecto() {
 
   const asignarDirecto = async () => {
     const num = parseInt(numeroBoleta, 10)
-    if (!rifaId) { setError('Selecciona una rifa'); return }
+    if (!rifaId) { setError('Selecciona un proyecto'); return }
     if (Number.isNaN(num) || num < 0) { setError('Número de boleta inválido'); return }
     if (!cliente.nombre.trim()) { setError('El nombre es requerido'); return }
     if (!cliente.telefono.trim()) { setError('El teléfono es requerido'); return }
@@ -232,7 +232,7 @@ export default function GanadorAsignarDirecto() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Rifa *</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Proyecto *</label>
             <select
               value={rifaId}
               onChange={(e) => { setRifaId(e.target.value); setBoletaDisponible(null); setAlertaBoleta(null) }}

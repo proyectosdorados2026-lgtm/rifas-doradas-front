@@ -174,7 +174,7 @@ export default function LoginPage() {
             RF
           </div>
           <h2 className="text-4xl font-[800] tracking-tight text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>
-            Rifas Ops
+            Sueños Dorados
           </h2>
           <p className="text-[var(--primary)]/80 text-base max-w-sm leading-relaxed">
             Panel operativo para ventas, abonos y reportes. Misma interfaz para admin y vendedores.

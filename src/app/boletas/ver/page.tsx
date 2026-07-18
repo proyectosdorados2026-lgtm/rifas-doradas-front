@@ -44,7 +44,7 @@ export default function VerBoletasPage() {
     }
   }, [router])
 
-  // 2. Efecto de Autoselección: Cuando las rifas cambian, selecciona la primera
+  // 2. Efecto de Autoselección: Cuando los proyectos cambian, selecciona la primera
   useEffect(() => {
     if (rifas.length > 0 && !selectedRifa) {
       const primeraRifaId = rifas[0].id
@@ -60,7 +60,7 @@ export default function VerBoletasPage() {
       setRifas(response.data)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar rifas')
+      setError(err instanceof Error ? err.message : 'Error al cargar proyectos')
     } finally {
       setLoading(false)
     }
@@ -142,12 +142,12 @@ export default function VerBoletasPage() {
           </div>
         )}
 
-        {/* Selector de Rifa */}
+        {/* Selector de Proyecto */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 transition-all hover:shadow-md">
           <div className="flex flex-col md:flex-row md:items-end gap-4">
             <div className="flex-1">
               <label htmlFor="rifa" className="block text-sm font-bold text-slate-700 mb-2 ml-1">
-                Rifa Activa
+                Proyecto activo
               </label>
               <div className="relative">
                 <select
@@ -157,7 +157,7 @@ export default function VerBoletasPage() {
                   disabled={loading}
                   className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none text-slate-900 appearance-none transition-all font-medium disabled:opacity-50"
                 >
-                  <option value="" disabled>Selecciona una rifa...</option>
+                  <option value="" disabled>Selecciona un proyecto...</option>
                   {rifas.map((rifa) => (
                     <option key={rifa.id} value={rifa.id}>
                       {rifa.nombre} — {rifa.estado}
@@ -173,7 +173,7 @@ export default function VerBoletasPage() {
             {loading && (
               <div className="flex items-center gap-2 text-slate-400 text-sm pb-3">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent"></div>
-                Cargando rifas...
+                Cargando proyectos...
               </div>
             )}
           </div>
@@ -190,8 +190,8 @@ export default function VerBoletasPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-20 text-center">
             <div className="max-w-xs mx-auto text-slate-400">
               <svg className="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-              <h3 className="text-lg font-bold text-slate-900 mb-1">No hay rifas disponibles</h3>
-              <p className="text-sm">Parece que aún no has creado ninguna rifa en el sistema.</p>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">No hay proyectos disponibles</h3>
+              <p className="text-sm">Parece que aún no has creado ningun proyecto en el sistema.</p>
             </div>
           </div>
         )}

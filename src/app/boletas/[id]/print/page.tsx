@@ -155,6 +155,7 @@ export default function BoletaPrintPage() {
             barcode={boleta.barcode}
             numero={boleta.numero}
             numeros={(boleta as any).numeros}
+            numeroPrincipal={(boleta as any).numero_principal}
             imagenUrl={boleta.imagen_url}
             rifaNombre={boleta.rifa_nombre}
             estado={boleta.estado}

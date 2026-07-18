@@ -21,7 +21,7 @@ function SelectorRifa({ rifas, rifaSeleccionada, onRifaSeleccionada }: {
 }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h2 className="text-lg font-medium text-slate-900 mb-4">Seleccionar Rifa</h2>
+      <h2 className="text-lg font-medium text-slate-900 mb-4">Seleccionar proyecto</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {rifas.map((rifa) => (
           <button
@@ -71,7 +71,7 @@ export default function VentasPage() {
     rifaSeleccionada?.id || ''
   )
 
-  // Cargar rifas activas
+  // Cargar proyectos activos
   const cargarRifas = async () => {
     try {
       const token = localStorage.getItem('token')
@@ -90,13 +90,13 @@ export default function VentasPage() {
         return
       }
 
-      // Cargar rifas activas usando endpoint operativo (sin acceso al módulo de rifas)
+      // Cargar proyectos activos usando endpoint operativo (sin acceso al módulo de rifas)
       try {
         const response = await rifaApi.getRifasOperativas('ACTIVA')
         setRifas(response.data)
         setError(null) // Limpiar error si todo funciona
       } catch (rifaError: any) {
-        console.warn('Error cargando rifas, verificando si es HTML 404...', rifaError)
+        console.warn('Error cargando proyectos, verificando si es HTML 404...', rifaError)
         
         // Verificar específicamente si es un error de HTML (404 page)
         if (rifaError.message && rifaError.message.includes('Unexpected token')) {
@@ -105,11 +105,11 @@ export default function VentasPage() {
           // Rifa de ejemplo para pruebas mientras el backend no tiene el endpoint
           const rifaEjemplo: Rifa = {
             id: 'rifa-ejemplo-123',
-            nombre: 'Rifa Ejemplo - Pruebas',
+            nombre: 'Proyecto ejemplo - Pruebas',
             slug: 'rifa-ejemplo-pruebas',
             premio: 'Premio de Ejemplo $1000',
             premio_principal: 'Premio de Ejemplo $1000',
-            descripcion: 'Rifa de ejemplo para probar el sistema de ventas',
+            descripcion: 'Proyecto de ejemplo para probar el sistema de ventas',
             estado: 'ACTIVA',
             precio_boleta: '10.00',
             total_boletas: 100,
@@ -127,7 +127,7 @@ export default function VentasPage() {
           }
           
           setRifas([rifaEjemplo])
-          setError('Usando rifa de ejemplo. El endpoint /api/rifas no está disponible en el backend.')
+          setError('Usando proyecto de ejemplo. El endpoint /api/rifas no está disponible en el backend.')
         } else {
           // Si es otro tipo de error, dejar que se maneje normalmente
           throw rifaError
@@ -136,13 +136,13 @@ export default function VentasPage() {
       
     } catch (error) {
       console.error('Error general en cargarRifas:', error)
-      setError('Error cargando rifas activas')
+      setError('Error cargando proyectos activos')
     } finally {
       setLoading(false)
     }
   }
 
-  // Seleccionar rifa
+  // Seleccionar proyecto
   const seleccionarRifa = (rifa: Rifa) => {
     setRifaSeleccionada(rifa)
     setPasoActual('seleccionar-boletas')
@@ -289,7 +289,7 @@ export default function VentasPage() {
                 pasoActual === 'seleccionar-rifa' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
               }`}>
                 <span>1</span>
-                <span>Seleccionar Rifa</span>
+                <span>Seleccionar proyecto</span>
               </div>
               <div className={`w-8 h-px bg-slate-300`}></div>
               <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium ${

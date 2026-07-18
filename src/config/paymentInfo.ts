@@ -1,7 +1,7 @@
-// Configuración de medios de pago — Rifas Doradas (única cuenta para todos los roles)
+// Configuración de medios de pago — Sueños Dorados (única cuenta para todos los roles)
 
 import { TokenManager } from '@/utils/auth'
-import { RIFAS_DORADAS_CONTACT } from '@/config/rifasDoradasContact'
+import { SUENOS_DORADOS_CONTACT } from '@/config/rifasDoradasContact'
 
 interface PaymentInfo {
   llave: string | null
@@ -10,17 +10,16 @@ interface PaymentInfo {
   whatsapp: string | null
 }
 
-const RIFAS_DORADAS_PAYMENT: PaymentInfo = {
-  llave: RIFAS_DORADAS_CONTACT.llaveBreve,
-  cuentaBancolombia: RIFAS_DORADAS_CONTACT.cuentaBancolombia,
-  titular: RIFAS_DORADAS_CONTACT.titular,
-  whatsapp: RIFAS_DORADAS_CONTACT.whatsappDisplay.replace(/\s/g, ''),
+const SUENOS_DORADOS_PAYMENT: PaymentInfo = {
+  llave: SUENOS_DORADOS_CONTACT.llaveBreve,
+  cuentaBancolombia: SUENOS_DORADOS_CONTACT.cuentaBancolombia,
+  titular: SUENOS_DORADOS_CONTACT.titular,
+  whatsapp: SUENOS_DORADOS_CONTACT.whatsappDisplay.replace(/\s/g, ''),
 }
 
 export function getPaymentInfo(): PaymentInfo {
-  // Misma cuenta para admin y vendedor
   void TokenManager.getUser()
-  return RIFAS_DORADAS_PAYMENT
+  return SUENOS_DORADOS_PAYMENT
 }
 
 /**
@@ -28,13 +27,13 @@ export function getPaymentInfo(): PaymentInfo {
  */
 export function getMediosDePagoTexto(): string {
   const info = getPaymentInfo()
-  let texto = `*Cómo pagar (Rifas Doradas)*\n`
+  let texto = `*Cómo pagar (Sueños Dorados)*\n`
   if (info.llave) {
     texto += `💰 Llave Bre-B: ${info.llave}\n`
   }
   texto += `💰 Bancolombia ahorros: ${info.cuentaBancolombia}\n`
   texto += `A nombre de: ${info.titular}\n`
-  texto += `📲 WhatsApp: ${RIFAS_DORADAS_CONTACT.whatsappDisplay}\n`
+  texto += `📲 WhatsApp: ${SUENOS_DORADOS_CONTACT.whatsappDisplay}\n`
   texto += `\nCuando pagues, envíanos el comprobante por este chat ✅`
   return texto
 }

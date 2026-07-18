@@ -64,7 +64,7 @@ export default function RifaList({
             conteo: { disponibles: stats.boletas_disponibles, pagadas: stats.boletas_pagadas }
           }
         } catch (error) {
-          console.error(`Error cargando estadísticas para rifa ${rifa.id}:`, error)
+          console.error(`Error cargando estadísticas para proyecto ${rifa.id}:`, error)
           // Si hay error, usar los valores del servidor como fallback
           return {
             id: rifa.id,
@@ -79,7 +79,7 @@ export default function RifaList({
     setBoletasConteoPorRifa(conteos)
   }, [rifas])
 
-  // Efecto para cargar boletas disponibles cuando cambian las rifas
+  // Efecto para cargar boletas disponibles cuando cambian los proyectos
   useEffect(() => {
     if (rifas.length > 0) {
       cargarBoletasDisponibles()
@@ -106,13 +106,13 @@ export default function RifaList({
     const options = []
     
     if (currentEstado === 'BORRADOR') {
-      options.push({ value: 'ACTIVA', label: 'Activar', confirm: '¿Estás seguro de que deseas activar esta rifa?' })
+      options.push({ value: 'ACTIVA', label: 'Activar', confirm: '¿Estás seguro de que deseas activar este proyecto?' })
     } else if (currentEstado === 'ACTIVA') {
-      options.push({ value: 'PAUSADA', label: 'Pausar', confirm: '¿Estás seguro de que deseas pausar esta rifa? Las ventas de boletas se detendrán.' })
-      options.push({ value: 'TERMINADA', label: 'Terminar', confirm: '¿Estás seguro de que deseas terminar esta rifa? Esta acción no se puede deshacer.' })
+      options.push({ value: 'PAUSADA', label: 'Pausar', confirm: '¿Estás seguro de que deseas pausar este proyecto? Las ventas de boletas se detendrán.' })
+      options.push({ value: 'TERMINADA', label: 'Terminar', confirm: '¿Estás seguro de que deseas terminar este proyecto? Esta acción no se puede deshacer.' })
     } else if (currentEstado === 'PAUSADA') {
-      options.push({ value: 'ACTIVA', label: 'Reactivar', confirm: '¿Estás seguro de que deseas reactivar esta rifa?' })
-      options.push({ value: 'TERMINADA', label: 'Terminar', confirm: '¿Estás seguro de que deseas terminar esta rifa? Esta acción no se puede deshacer.' })
+      options.push({ value: 'ACTIVA', label: 'Reactivar', confirm: '¿Estás seguro de que deseas reactivar este proyecto?' })
+      options.push({ value: 'TERMINADA', label: 'Terminar', confirm: '¿Estás seguro de que deseas terminar este proyecto? Esta acción no se puede deshacer.' })
     }
 
     return options
@@ -121,7 +121,7 @@ export default function RifaList({
   const handleDeleteClick = (rifa: Rifa) => {
     setConfirmDialog({
       isOpen: true,
-      title: 'Eliminar Rifa',
+      title: 'Eliminar proyecto',
       message: `¿Estás seguro de que deseas eliminar "${rifa.nombre}"? Esta acción no se puede deshacer y eliminará todos los datos asociados.`,
       onConfirm: () => {
         onDelete(rifa.id)
@@ -174,7 +174,7 @@ export default function RifaList({
               ) : rifas.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                    No se encontraron rifas
+                    No se encontraron proyectos
                   </td>
                 </tr>
               ) : (

@@ -101,20 +101,29 @@ export default function SelectorBoletas({
     }
   }, [rifaId])
 
-  // Bloquear boleta al seleccionarla
-  const seleccionarBoleta = async (boleta: BoletaDisponible) => {
+  // Bloquear boleta al seleccionarla (el número pulsado queda como principal)
+  const seleccionarBoleta = async (
+    boleta: BoletaDisponible,
+    numeroPrincipal?: number | null
+  ) => {
     if (bloqueando.has(boleta.id)) return
     
     setBloqueando(prev => new Set(prev).add(boleta.id))
     
     try {
-      const response = await ventasApi.bloquearBoleta(boleta.id, 15)
+      const nums = normalizeNumeros((boleta as any).numeros, boleta.numero)
+      const principal =
+        numeroPrincipal != null && nums.includes(Number(numeroPrincipal))
+          ? Number(numeroPrincipal)
+          : Number(boleta.numero)
+      const response = await ventasApi.bloquearBoleta(boleta.id, 15, principal)
       const bloqueo = response.data
       
       const boletaEnCarrito: BoletaEnCarrito = {
         id: boleta.id,
         numero: boleta.numero,
-        numeros: normalizeNumeros((boleta as any).numeros, boleta.numero),
+        numeros: nums,
+        numero_principal: principal,
         precio: precioBoleta,
         reserva_token: bloqueo.reserva_token,
         bloqueo_hasta: bloqueo.bloqueo_hasta,
@@ -193,6 +202,7 @@ if (interval) {
       const boletaDisponible: BoletaDisponible = {
         id: boleta.id,
         numero: boleta.numero,
+        numeros: normalizeNumeros(boleta.numeros, boleta.numero),
         estado: 'DISPONIBLE',
         qr_url: boleta.qr_url,
         barcode: boleta.barcode,
@@ -278,7 +288,11 @@ if (interval) {
     if (!boletaRuleta || bloqueandoRuleta) return
     setBloqueandoRuleta(true)
     try {
-      await seleccionarBoleta(boletaRuleta)
+      const principal =
+        Number.isFinite(numeroMostrado) && numeroMostrado > 0
+          ? Number(numeroMostrado)
+          : Number(boletaRuleta.numero)
+      await seleccionarBoleta(boletaRuleta, principal)
       cerrarRuleta()
     } catch {
       // silencioso, seleccionarBoleta ya maneja el error
@@ -469,7 +483,7 @@ useEffect(() => {
           <p className="text-slate-600 mb-4 max-w-md mx-auto">
             {busqueda 
               ? `No hay boletas que coincidan con "${busqueda}". Intenta con otro número de boleta.`
-              : 'Todas las boletas de esta rifa pueden estar vendidas o reservadas. Intenta más tarde o contacta al administrador.'
+              : 'Todas las boletas de este proyecto pueden estar vendidas o reservadas. Intenta más tarde o contacta al administrador.'
             }
           </p>
           {busqueda && (
@@ -483,28 +497,55 @@ useEffect(() => {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {boletasPagina.map((boleta) => (
-            <button
-              key={boleta.id}
-              onClick={() => seleccionarBoleta(boleta)}
-              disabled={bloqueando.has(boleta.id)}
-              className="bg-white border-2 border-slate-200 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div className="text-center">
-                <div className="text-sm font-bold text-slate-900 leading-tight">
-                  {formatBoletaNumeros((boleta as any).numeros, boleta.numero)}
-                </div>
-                <div className="text-xs text-slate-600 mt-1">
-                  ${precioBoleta.toLocaleString('es-CO')}
-                </div>
-                {bloqueando.has(boleta.id) && (
-                  <div className="text-xs text-blue-600 mt-2">
-                    Bloqueando...
+          {boletasPagina.map((boleta) => {
+            const nums = normalizeNumeros((boleta as any).numeros, boleta.numero)
+            const dual = nums.length > 1
+            return (
+              <div
+                key={boleta.id}
+                className="bg-white border-2 border-slate-200 rounded-lg p-3 hover:border-blue-500 hover:bg-blue-50 transition-all"
+              >
+                <div className="text-center space-y-2">
+                  {dual ? (
+                    <div className="grid gap-1.5">
+                      {nums.map((n) => (
+                        <button
+                          key={`${boleta.id}-${n}`}
+                          type="button"
+                          onClick={() => seleccionarBoleta(boleta, n)}
+                          disabled={bloqueando.has(boleta.id)}
+                          className="w-full rounded-md border border-amber-300/70 bg-amber-50 px-2 py-1.5 text-sm font-bold text-slate-900 disabled:opacity-50"
+                          title={`Seleccionar #${String(n).padStart(4, '0')} como principal`}
+                        >
+                          #{String(n).padStart(4, '0')}
+                        </button>
+                      ))}
+                      <p className="text-[10px] leading-tight text-slate-500">
+                        Toca el número que será el principal
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => seleccionarBoleta(boleta, nums[0])}
+                      disabled={bloqueando.has(boleta.id)}
+                      className="w-full text-sm font-bold text-slate-900 disabled:opacity-50"
+                    >
+                      {formatBoletaNumeros(nums, boleta.numero)}
+                    </button>
+                  )}
+                  <div className="text-xs text-slate-600">
+                    ${precioBoleta.toLocaleString('es-CO')}
                   </div>
-                )}
+                  {bloqueando.has(boleta.id) && (
+                    <div className="text-xs text-blue-600">
+                      Bloqueando...
+                    </div>
+                  )}
+                </div>
               </div>
-            </button>
-          ))}
+            )
+          })}
         </div>
       )}
 

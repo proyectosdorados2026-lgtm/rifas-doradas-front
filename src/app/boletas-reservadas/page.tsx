@@ -267,13 +267,13 @@ export default function BoletasReservadasPage() {
               <option value="PUNTO_FISICO">🏪 Punto Físico</option>
             </select>
 
-            {/* Filtro Rifa */}
+            {/* Filtro Proyecto */}
             <select
               value={filtroRifa}
               onChange={(e) => setFiltroRifa(e.target.value)}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="TODAS">Todas las rifas</option>
+              <option value="TODAS">Todas los proyectos</option>
               {rifasUnicas.map(rifa => (
                 <option key={rifa} value={rifa}>{rifa}</option>
               ))}
@@ -314,7 +314,7 @@ export default function BoletasReservadasPage() {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Boleta</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rifa</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Proyecto</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cliente</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Origen</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reserva hasta</th>
@@ -332,7 +332,7 @@ export default function BoletasReservadasPage() {
                         </span>
                       </td>
 
-                      {/* Rifa */}
+                      {/* Proyecto */}
                       <td className="px-4 py-3">
                         <p className="text-slate-900 font-medium truncate max-w-[180px]">{boleta.rifa_nombre}</p>
                         {boleta.fecha_sorteo && (

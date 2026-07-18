@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Verificar Boleta | Sistema de Rifas',
+  title: 'Verificar Boleta | Sueños Dorados',
   description: 'Verifica la autenticidad de tu boleta escaneando el código QR.',
 }
 

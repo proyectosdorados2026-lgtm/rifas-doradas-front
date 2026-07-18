@@ -588,33 +588,87 @@ tbody tr:hover {
   width: 100%;
 }
 
-.boleta-ticket__numero {
+.boleta-ticket__numeros {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #d4af37;
-  letter-spacing: 0.06em;
+  width: 100%;
+}
+
+.boleta-ticket__numero-block {
+  display: grid;
+  justify-items: center;
+  row-gap: 1px;
+  width: 100%;
+  padding: 5px 5px 6px;
+  border-radius: 6px;
+}
+
+.boleta-ticket__numero-block--principal {
+  border: 1px solid rgba(243, 196, 93, 0.5);
+  background: rgba(212, 175, 55, 0.09);
+}
+
+.boleta-ticket__numero-block--regalo {
+  border: 1px dashed rgba(110, 231, 183, 0.52);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.boleta-ticket__numero-label {
+  color: #e7e5e4;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.boleta-ticket__numero-value {
+  color: #f3c45d;
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-  word-break: break-word;
+  line-height: 1.05;
   font-family: var(--font-mono);
 }
 
-.boleta-ticket__numero--par {
-  font-size: 1.05rem;
+.boleta-ticket__numero-block--regalo .boleta-ticket__numero-value {
+  color: #6ee7b7;
 }
 
-.boleta-ticket__numero-line {
-  display: block;
+.boleta-ticket__numero-separator {
+  width: 20px;
+  height: 20px;
+  margin: -4px 0;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #16120a;
+  border: 1px solid rgba(243, 196, 93, 0.45);
+  box-shadow: 0 0 0 3px #0e0e0e;
+  color: #f3c45d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.boleta-ticket__regalo-note {
+  margin-top: 2px;
+  color: #a7f3d0;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .boleta-ticket__precio {
+  margin-top: 4px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: #c9a227;
   letter-spacing: 0.04em;
 }
@@ -632,6 +686,23 @@ tbody tr:hover {
   font-size: 1.25rem;
   font-weight: 700;
   color: #d4af37;
+}
+
+.boleta-ticket__fallback-numbers {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  font-family: var(--font-mono);
+}
+
+.boleta-ticket__fallback-numbers strong {
+  color: #f3c45d;
+  font-size: 1.15rem;
+}
+
+.boleta-ticket__fallback-numbers span {
+  color: #6ee7b7;
+  font-size: 0.95rem;
 }
 
 .boleta-ticket__right-fallback p:last-child {

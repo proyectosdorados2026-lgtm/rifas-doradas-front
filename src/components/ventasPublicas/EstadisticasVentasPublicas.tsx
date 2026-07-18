@@ -249,11 +249,11 @@ export default function EstadisticasVentasPublicas() {
         </div>
       )}
 
-      {/* Estadísticas por Rifa */}
+      {/* Estadísticas por Proyecto */}
       {estadisticasPorRifa.length > 0 && (
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-sm font-semibold text-slate-900 mb-4">
-            📊 Descomposición por Rifa
+            📊 Descomposición por proyecto
           </h3>
 
           <div className="overflow-x-auto">

@@ -306,7 +306,7 @@ export default function HistorialMovimientos() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Rifa</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Proyecto</label>
             <select
               value={rifaId}
               onChange={(e) => setRifaId(e.target.value)}

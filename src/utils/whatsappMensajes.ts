@@ -1,5 +1,5 @@
 /**
- * Mensajes de WhatsApp para clientes — tono humano, marca Rifas Doradas, boletas en pacha.
+ * Mensajes de WhatsApp para clientes — tono humano, marca Sueños Dorados, boletas en pacha.
  */
 import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 import { getMediosDePagoTexto } from '@/config/paymentInfo'
@@ -13,6 +13,17 @@ const fmt = (value: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value)
+
+/** Evita mostrar la palabra «rifa» en nombres de proyecto hacia el cliente */
+export function nombreProyecto(nombre: string): string {
+  return (nombre || 'proyecto')
+    .replace(/\bRIFAS\b/g, 'PROYECTO')
+    .replace(/\bRIFA\b/g, 'PROYECTO')
+    .replace(/\brifas\b/gi, 'proyecto')
+    .replace(/\brifa\b/gi, 'proyecto')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
 
 /** Etiqueta de una boleta siempre como pacha (ambos números). */
 export function formatPacha(
@@ -73,7 +84,7 @@ export function mensajeRecordatorioPendiente(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Te escribimos de *Rifas Doradas*. Queríamos recordarte que aún tienes pachas pendientes:\n\n`
+  msg += `Te escribimos de *Sueños Dorados*. Queríamos recordarte que aún tienes pachas pendientes:\n\n`
 
   if (opts.lineasDetalle.length) {
     msg += opts.lineasDetalle.join('\n')
@@ -120,7 +131,7 @@ export function mensajeReservaRecibida(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Somos de *Rifas Doradas*. Ya quedó tu reserva en *${opts.rifaNombre}*:\n\n`
+  msg += `Somos de *Sueños Dorados*. Ya quedó tu reserva en *${nombreProyecto(opts.rifaNombre)}*:\n\n`
   msg += `🎟️ Tus pachas: *${opts.pachas}*\n`
   msg += `💵 Total: *${fmt(opts.montoTotal)}*\n\n`
   msg += `Para ir participando en los premios, ve abonando cuando puedas. Si tienes duda de cuánto te falta, escríbenos.\n\n`
@@ -141,7 +152,7 @@ export function mensajeSaldoPendienteVenta(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Te escribimos de *Rifas Doradas*. Te quedó un saldo de *${fmt(opts.saldo)}* en *${opts.rifaNombre}*.\n\n`
+  msg += `Te escribimos de *Sueños Dorados*. Te quedó un saldo de *${fmt(opts.saldo)}* en *${nombreProyecto(opts.rifaNombre)}*.\n\n`
   msg += `🎟️ Tus pachas: *${opts.pachas}*\n`
   msg += `Total: ${fmt(opts.montoTotal)} · Ya llevas: ${fmt(opts.abonado)}\n\n`
   msg += `${bloquePago()}\n\n`
@@ -159,7 +170,7 @@ export function mensajePagoPendienteVenta(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Te escribimos de *Rifas Doradas*. Te recordamos el pago pendiente de *${fmt(opts.saldo)}* en *${opts.rifaNombre}*.\n\n`
+  msg += `Te escribimos de *Sueños Dorados*. Te recordamos el pago pendiente de *${fmt(opts.saldo)}* en *${nombreProyecto(opts.rifaNombre)}*.\n\n`
   msg += `🎟️ Tus pachas: *${opts.pachas}*\n\n`
   msg += `${bloquePago()}\n\n`
   msg += `Cuando pagues, envíanos el comprobante por este chat 🙌\n\n`
@@ -183,8 +194,8 @@ export function mensajeConfirmacionAbono(opts: {
 
   if (opts.cuentaSaldada) {
     msg += `Hola ${nombre} 👋\n\n`
-    msg += `¡Listo! En *Rifas Doradas* ya quedó registrado tu pago de *${fmt(opts.montoAbonado)}* 🎉\n\n`
-    msg += `*Tu cuenta en ${opts.rifaNombre}:*\n`
+    msg += `¡Listo! En *Sueños Dorados* ya quedó registrado tu pago de *${fmt(opts.montoAbonado)}* 🎉\n\n`
+    msg += `*Tu cuenta en ${nombreProyecto(opts.rifaNombre)}:*\n`
     msg += `💵 Total: ${fmt(opts.montoTotal)}\n`
     msg += `✅ Pagado: ${fmt(opts.nuevoPagado)}\n`
     msg += `🎉 *¡Quedaste al día!*\n`
@@ -195,8 +206,8 @@ export function mensajeConfirmacionAbono(opts: {
     msg += cierreConsulta()
   } else {
     msg += `Hola ${nombre} 👋\n\n`
-    msg += `En *Rifas Doradas* ya quedó tu abono de *${fmt(opts.montoAbonado)}* ✅\n\n`
-    msg += `*Tu cuenta en ${opts.rifaNombre}:*\n`
+    msg += `En *Sueños Dorados* ya quedó tu abono de *${fmt(opts.montoAbonado)}* ✅\n\n`
+    msg += `*Tu cuenta en ${nombreProyecto(opts.rifaNombre)}:*\n`
     msg += `💵 Total: ${fmt(opts.montoTotal)}\n`
     msg += `✅ Pagado: ${fmt(opts.nuevoPagado)}\n`
     msg += `⏳ Te falta: *${fmt(opts.nuevoSaldo)}*\n`
@@ -221,7 +232,7 @@ export function mensajeComprobanteVenta(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Te enviamos el detalle de tu compra en *Rifas Doradas*:\n\n`
+  msg += `Te enviamos el detalle de tu compra en *Sueños Dorados*:\n\n`
   msg += `📋 Tipo: ${opts.tipoLabel}\n`
   msg += `🎟️ Pachas: ${opts.pachas}\n`
   msg += `💵 Total: ${fmt(opts.montoTotal)}\n`
@@ -245,7 +256,7 @@ export function mensajeComprobanteAbono(opts: {
 }): string {
   const nombre = opts.nombre || 'amigo/a'
   let msg = `Hola ${nombre} 👋\n\n`
-  msg += `Confirmamos tu abono en *Rifas Doradas*:\n\n`
+  msg += `Confirmamos tu abono en *Sueños Dorados*:\n\n`
   msg += `💵 Abonaste: ${fmt(opts.monto)}\n`
   msg += `🎟️ Pachas: ${opts.pachas}\n`
   msg += `Total de la venta: ${fmt(opts.montoTotal)}\n`
@@ -266,7 +277,7 @@ export function mensajeClienteConfirmaReserva(opts: {
   montoTotal: number
 }): string {
   return (
-    `Hola, soy ${opts.nombre}. Confirmé mi reserva en *Rifas Doradas*.\n` +
+    `Hola, soy ${opts.nombre}. Confirmé mi reserva en *Sueños Dorados*.\n` +
     `Tel: ${opts.telefono}\n` +
     `Pachas: ${opts.pachas}\n` +
     `Total: ${fmt(opts.montoTotal)}`

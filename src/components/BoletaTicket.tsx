@@ -9,13 +9,14 @@ import {
   BOLETA_DEFAULT_HEIGHT,
   boletaHeightForImage,
 } from '@/constants/boletaDimensions'
-import { formatBoletaNumeros, normalizeNumeros } from '@/utils/formatBoletaNumeros'
+import { getPrincipalGift } from '@/utils/formatBoletaNumeros'
 
 interface BoletaTicketProps {
   qrUrl: string
   barcode: string
   numero: number
   numeros?: number[]
+  numeroPrincipal?: number | null
   imagenUrl?: string | null
   rifaNombre: string
   estado: string
@@ -36,6 +37,7 @@ export default function BoletaTicket(props: BoletaTicketProps) {
     qrUrl,
     numero,
     numeros,
+    numeroPrincipal = null,
     imagenUrl,
     rifaNombre,
     estado,
@@ -100,7 +102,7 @@ export default function BoletaTicket(props: BoletaTicketProps) {
     (estadoPagadoWords.has(estadoNorm) || (tieneCliente && deudaNum === 0)) && tieneCliente
   const esAbonada =
     estadoNorm === 'ABONADA' || (tieneCliente && typeof deudaNum === 'number' && deudaNum > 0)
-  const numsDisplay = normalizeNumeros(numeros, numero)
+  const { principal, gift } = getPrincipalGift(numeros, numero, numeroPrincipal)
 
   const badge = (label: string, variant: string) => (
     <div className={`boleta-ticket__badge boleta-ticket__badge--${variant}`}>{label}</div>
@@ -207,16 +209,29 @@ export default function BoletaTicket(props: BoletaTicketProps) {
         {nota && <div className="boleta-ticket__nota">{nota}</div>}
 
         <div className="boleta-ticket__footer">
-          <div
-            className={`boleta-ticket__numero ${
-              numsDisplay.length > 1 ? 'boleta-ticket__numero--par' : ''
-            }`}
-          >
-            {numsDisplay.map((n) => (
-              <span key={n} className="boleta-ticket__numero-line">
-                #{String(n).padStart(4, '0')}
-              </span>
-            ))}
+          <div className="boleta-ticket__numeros">
+            <div className="boleta-ticket__numero-block boleta-ticket__numero-block--principal">
+              <span className="boleta-ticket__numero-label">Número principal</span>
+              <strong className="boleta-ticket__numero-value">
+                #{String(principal ?? 0).padStart(4, '0')}
+              </strong>
+            </div>
+            {gift != null && (
+              <>
+                <div className="boleta-ticket__numero-separator" aria-hidden="true">
+                  +
+                </div>
+                <div className="boleta-ticket__numero-block boleta-ticket__numero-block--regalo">
+                  <span className="boleta-ticket__numero-label">🎁 Número de regalo</span>
+                  <strong className="boleta-ticket__numero-value">
+                    #{String(gift).padStart(4, '0')}
+                  </strong>
+                  <span className="boleta-ticket__regalo-note">
+                    Incluido gratis · otro número de 4 cifras
+                  </span>
+                </div>
+              </>
+            )}
           </div>
           {typeof precio === 'number' && precio > 0 && (
             <div className="boleta-ticket__precio">${precio.toLocaleString('es-CO')}</div>
@@ -243,7 +258,10 @@ export default function BoletaTicket(props: BoletaTicketProps) {
           <div className="boleta-ticket__right-fallback">
             <div className="text-center">
               <p>{rifaNombre}</p>
-              <p>{formatBoletaNumeros(numsDisplay)}</p>
+              <div className="boleta-ticket__fallback-numbers">
+                <strong>Tu número: #{String(principal ?? 0).padStart(4, '0')}</strong>
+                {gift != null && <span>Regalo: #{String(gift).padStart(4, '0')}</span>}
+              </div>
             </div>
           </div>
         )}

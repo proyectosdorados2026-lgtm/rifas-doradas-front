@@ -22,7 +22,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   {
     href: '/analytics',
     label: 'Reportes',
-    description: 'Dashboard global de la rifa',
+    description: 'Dashboard global del proyecto',
     roles: ['SUPER_ADMIN'],
   },
   {
@@ -81,8 +81,8 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   },
   {
     href: '/rifas',
-    label: 'Rifas',
-    description: 'Crear y configurar rifas',
+    label: 'Proyectos',
+    description: 'Crear y configurar proyectos',
     roles: ['SUPER_ADMIN'],
   },
   {

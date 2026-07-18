@@ -145,7 +145,7 @@ export default function PasswordConfirmDialog({
                   Validando...
                 </>
               ) : (
-                'Eliminar Rifa'
+                'Eliminar proyecto'
               )}
             </button>
           </div>

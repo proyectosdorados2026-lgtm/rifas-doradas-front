@@ -139,7 +139,10 @@ export default function CarritoVentas({
         },
         boletas: boletas.map(b => ({
           id: b.id,
-          reserva_token: b.reserva_token
+          reserva_token: b.reserva_token,
+          ...(b.numero_principal != null
+            ? { numero_principal: b.numero_principal }
+            : {}),
         })),
         medio_pago_id: medioPagoId,
         total_venta: total,
@@ -340,6 +343,7 @@ export default function CarritoVentas({
                   barcode={b.barcode || ''}
                   numero={b.numero}
                   numeros={b.numeros}
+                  numeroPrincipal={b.numero_principal}
                   imagenUrl={b.imagen_url}
                   rifaNombre={rifaNombre || ''}
                   estado={
@@ -792,7 +796,7 @@ export default function CarritoVentas({
                 <span className="font-medium text-slate-900">{cliente.nombre}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Rifa:</span>
+                <span className="text-slate-600">Proyecto:</span>
                 <span className="font-medium text-slate-900">{rifaNombre || 'Sin nombre'}</span>
               </div>
               <div className="flex justify-between">

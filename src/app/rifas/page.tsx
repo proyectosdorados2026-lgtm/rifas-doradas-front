@@ -64,7 +64,7 @@ export default function RifasPage() {
       setRifas(response.data)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar rifas')
+      setError(err instanceof Error ? err.message : 'Error al cargar proyectos')
     } finally {
       setLoading(false)
     }
@@ -97,7 +97,7 @@ export default function RifasPage() {
       setRifaToDelete(null)
       fetchRifas()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar rifa')
+      setError(err instanceof Error ? err.message : 'Error al eliminar proyecto')
       setShowPasswordDialog(false)
       setRifaToDelete(null)
     }
@@ -114,7 +114,7 @@ export default function RifasPage() {
       setEditingRifa(null)
       fetchRifas()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar rifa')
+      setError(err instanceof Error ? err.message : 'Error al guardar proyecto')
     }
   }
 
@@ -174,13 +174,13 @@ export default function RifasPage() {
               >
                 ← Dashboard
               </button>
-              <h1 className="text-2xl font-light text-slate-900">Rifas</h1>
+              <h1 className="text-2xl font-light text-slate-900">Proyectos</h1>
             </div>
             <button
               onClick={handleCreateRifa}
               className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
             >
-              Nueva Rifa
+              Nuevo proyecto
             </button>
           </div>
         </div>

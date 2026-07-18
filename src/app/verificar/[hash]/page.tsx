@@ -95,7 +95,7 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
     'El premio será entregado únicamente al titular registrado de la boleta, previa verificación de identidad con documento oficial.',
     'La boleta es personal e intransferible salvo autorización expresa del organizador. Cualquier cesión no autorizada anula la participación.',
     'El organizador no se hace responsable por boletas adquiridas a través de terceros no autorizados.',
-    'Al adquirir esta boleta, el participante acepta los términos y condiciones completos de la rifa, disponibles en el sitio web oficial.',
+    'Al adquirir esta boleta, el participante acepta los términos y condiciones completos del proyecto, disponibles en el sitio web oficial.',
     'Los abonos realizados no son reembolsables una vez confirmados. En caso de cancelación por parte del participante, se aplicarán las políticas de devolución vigentes.',
     'Esta boleta es un comprobante digital verificable. El código QR vinculado a esta boleta permite la consulta en tiempo real del estado de su participación.',
   ]
@@ -264,7 +264,7 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
           </div>
         )}
 
-        {/* Info de la Rifa */}
+        {/* Info de la Proyecto */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-5 shadow-xl">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center">
@@ -272,12 +272,12 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
               </svg>
             </div>
-            <h3 className="text-white font-semibold">Información de la Rifa</h3>
+            <h3 className="text-white font-semibold">Información del proyecto</h3>
           </div>
           
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-slate-400 text-sm">Rifa</span>
+              <span className="text-slate-400 text-sm">Proyecto</span>
               <span className="text-white font-medium text-right text-sm max-w-[60%]">{rifa.nombre}</span>
             </div>
             {rifa.premio_principal && (
@@ -328,10 +328,10 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
             ))}
           </div>
 
-          {/* Términos personalizados de la rifa */}
+          {/* Términos personalizados del proyecto */}
           {rifa.terminos_condiciones && (
             <div className="mt-5 pt-4 border-t border-slate-700/50">
-              <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">Condiciones específicas de esta rifa</p>
+              <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">Condiciones específicas de este proyecto</p>
               <p className="text-slate-400 text-sm leading-relaxed">{rifa.terminos_condiciones}</p>
             </div>
           )}
@@ -354,7 +354,7 @@ function BoletaVerificada({ data }: { data: VerificacionData }) {
             </svg>
             <div className="h-px bg-slate-700 w-12" />
           </div>
-          <p className="text-slate-700 text-[10px] mt-2 uppercase tracking-widest">Inversiones Castaño & Asociados</p>
+          <p className="text-slate-700 text-[10px] mt-2 uppercase tracking-widest">Sueños Dorados</p>
         </div>
       </div>
     </div>

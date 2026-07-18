@@ -4,6 +4,7 @@ export interface BoletaDisponible {
   id: string
   numero: number
   numeros?: number[]
+  numero_principal?: number | null
   estado: 'DISPONIBLE'
   qr_url: string
   barcode: string
@@ -60,6 +61,7 @@ export interface BoletaEnCarrito {
   id: string
   numero: number
   numeros?: number[]
+  numero_principal?: number | null
   precio: number
   reserva_token: string
   bloqueo_hasta: string
@@ -74,6 +76,7 @@ export interface VentaRequest {
   boletas: Array<{
     id: string
     reserva_token: string
+    numero_principal?: number | null
   }>
   
   medio_pago_id: string
@@ -184,7 +187,7 @@ export interface VentaConAbonos extends VentaResponse {
 export interface ReservaRequest {
   rifa_id: string
   cliente: Cliente
-  boletas: string[] // Array de IDs de boletas
+  boletas: Array<string | { id: string; numero_principal?: number | null }>
   dias_bloqueo?: number // Opcional, default 5
   notas?: string
 }

@@ -193,7 +193,7 @@ export default function SuperadminVentasPage() {
               <thead className="bg-slate-50 text-slate-500 text-left">
                 <tr>
                   <th className="px-4 py-3 font-medium">Cliente</th>
-                  <th className="px-4 py-3 font-medium">Rifa</th>
+                  <th className="px-4 py-3 font-medium">Proyecto</th>
                   <th className="px-4 py-3 font-medium">Boletas</th>
                   <th className="px-4 py-3 font-medium">Total</th>
                   <th className="px-4 py-3 font-medium">Estado</th>
@@ -406,7 +406,7 @@ export default function SuperadminVentasPage() {
                 <input
                   value={agregarBoletaId}
                   onChange={(e) => setAgregarBoletaId(e.target.value)}
-                  placeholder="UUID de una boleta DISPONIBLE de la misma rifa"
+                  placeholder="UUID de una boleta DISPONIBLE del mismo proyecto"
                   className="flex-1 min-w-[220px] rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
                 />
                 <button

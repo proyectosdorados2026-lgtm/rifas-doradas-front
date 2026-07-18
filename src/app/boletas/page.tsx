@@ -86,7 +86,7 @@ export default function BoletasPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">Crear Boletas</h2>
-                <p className="text-slate-600">Genera nuevas boletas para las rifas disponibles</p>
+                <p className="text-slate-600">Genera nuevas boletas para los proyectos disponibles</p>
               </div>
               <div className="text-blue-600 font-medium hover:text-blue-700">
                 Ir a crear boletas →
@@ -105,7 +105,7 @@ export default function BoletasPage() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">Ver Boletas</h2>
-                <p className="text-slate-600">Consulta todas las boletas por rifa</p>
+                <p className="text-slate-600">Consulta todas las boletas por proyecto</p>
               </div>
               <div className="text-green-600 font-medium hover:text-green-700">
                 Ir a ver boletas →
@@ -120,7 +120,7 @@ export default function BoletasPage() {
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5"></div>
               <div>
-                <strong>Crear Boletas:</strong> Genera nuevas boletas para las rifas activas
+                <strong>Crear Boletas:</strong> Genera nuevas boletas para los proyectos activas
               </div>
             </div>
             <div className="flex items-start space-x-3">

@@ -23,8 +23,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema de Rifas | Panel",
-  description: "Gestión de rifas, ventas y sorteos",
+  title: "Sueños Dorados | Panel",
+  description: "Gestión de proyectos, ventas y sorteos",
 };
 
 export default function RootLayout({

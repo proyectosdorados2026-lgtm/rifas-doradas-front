@@ -193,7 +193,7 @@ class VentasPublicasApiService {
   }
 
   /**
-   * Obtener estadísticas por rifa
+   * Obtener estadísticas por proyecto
    */
   async getEstadisticasPorRifa(): Promise<
     ApiResponse<EstadisticasPorRifa[]>

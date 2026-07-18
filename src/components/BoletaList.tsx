@@ -22,7 +22,7 @@ import {
   BOLETA_DEFAULT_HEIGHT,
   boletaHeightForImage,
 } from '@/constants/boletaDimensions'
-import { formatBoletaNumeros, searchMatchesNumeros, normalizeNumeros } from '@/utils/formatBoletaNumeros'
+import { formatBoletaNumeros, searchMatchesNumeros, normalizeNumeros, getPrincipalGift } from '@/utils/formatBoletaNumeros'
 
 interface BoletaListProps {
   boletas: Boleta[]
@@ -316,17 +316,39 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
         }
 
         const qrSrc = boleta.qr_url || ''
-        const numsList = normalizeNumeros(boleta.numeros, boleta.numero)
-        const numsLabel = formatBoletaNumeros(numsList, boleta.numero)
-        const numsHtml = numsList
-          .map((n) => `<span style="display:block;white-space:nowrap;">#${String(n).padStart(4, '0')}</span>`)
-          .join('')
-        const numPad = boleta.numero.toString().padStart(4, '0')
+        const { principal, gift, ordered } = getPrincipalGift(
+          boleta.numeros,
+          boleta.numero,
+          (boleta as any).numero_principal
+        )
+        const numsLabel =
+          gift != null
+            ? `Principal #${String(principal).padStart(4, '0')} · Regalo #${String(gift).padStart(4, '0')}`
+            : `Principal #${String(principal ?? boleta.numero).padStart(4, '0')}`
+        const numsHtml = `
+          <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+            <div style="display:grid;justify-items:center;width:100%;padding:5px;border-radius:6px;border:1px solid rgba(243,196,93,0.5);background:rgba(212,175,55,0.09);">
+              <span style="color:#e7e5e4;font-size:7.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;">Número principal</span>
+              <strong style="color:#f3c45d;font-size:1.18rem;font-weight:800;letter-spacing:0.08em;font-family:ui-monospace,Menlo,monospace;">#${String(principal ?? 0).padStart(4, '0')}</strong>
+            </div>
+            ${
+              gift != null
+                ? `<div style="width:20px;height:20px;margin:-4px 0;display:grid;place-items:center;border-radius:50%;background:#16120a;border:1px solid rgba(243,196,93,0.45);box-shadow:0 0 0 3px #0e0e0e;color:#f3c45d;font-size:12px;font-weight:900;">+</div>
+                  <div style="display:grid;justify-items:center;width:100%;padding:5px;border-radius:6px;border:1px dashed rgba(110,231,183,0.52);background:rgba(16,185,129,0.08);">
+                    <span style="color:#e7e5e4;font-size:7.5px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;">🎁 Número de regalo</span>
+                    <strong style="color:#6ee7b7;font-size:1.18rem;font-weight:800;letter-spacing:0.08em;font-family:ui-monospace,Menlo,monospace;">#${String(gift).padStart(4, '0')}</strong>
+                    <span style="margin-top:2px;color:#a7f3d0;font-size:6px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;">Incluido gratis · otro número de 4 cifras</span>
+                  </div>`
+                : ''
+            }
+          </div>`
+        const numPad = String(principal ?? boleta.numero).padStart(4, '0')
+        void ordered
 
         // Usar la imagen data URL pre-cargada (sin CORS, instantáneo)
         const rightContent = imagenDataUrl
           ? `<img src="${imagenDataUrl}" style="width:100%;height:100%;object-fit:fill;display:block;" />`
-          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a,#151515);"><div style="text-align:center;"><p style="font-size:20px;font-weight:700;color:#d4af37;">${rifaInfo?.nombre || 'Rifa'}</p><p style="color:#a3a3a3;">${numsLabel}</p></div></div>`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a,#151515);"><div style="text-align:center;"><p style="font-size:20px;font-weight:700;color:#d4af37;">${rifaInfo?.nombre || 'Proyecto'}</p><p style="color:#a3a3a3;">${numsLabel}</p></div></div>`
 
         container.innerHTML = `
           <div class="boleta-ticket" style="${BOLETA_TICKET_STYLE}width:${BOLETA_WIDTH}px;height:${ticketHeight}px;">
@@ -424,7 +446,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
     return (
       <div className="flex justify-center items-center py-20">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-900 mb-4"></div>
-        <div className="ml-4 text-slate-600 font-medium text-lg">Cargando la información de la rifa...</div>
+        <div className="ml-4 text-slate-600 font-medium text-lg">Cargando la información del proyecto...</div>
       </div>
     )
   }
@@ -436,7 +458,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gestión de Boletas</h1>
-          <p className="text-slate-500 text-sm mt-1">Administra los estados y clientes de la rifa actual.</p>
+          <p className="text-slate-500 text-sm mt-1">Administra los estados y clientes de la proyecto actual.</p>
         </div>
         <button 
           onClick={() => router.push('/boletas/crear')} // Ajusta tu ruta aquí
@@ -703,7 +725,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
                   <td colSpan={10} className="px-6 py-16 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <svg className="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <p className="text-base">{searchTerm ? 'No hay resultados para tu búsqueda.' : 'Aún no hay boletas en esta rifa.'}</p>
+                      <p className="text-base">{searchTerm ? 'No hay resultados para tu búsqueda.' : 'Aún no hay boletas en este proyecto.'}</p>
                     </div>
                   </td>
                 </tr>

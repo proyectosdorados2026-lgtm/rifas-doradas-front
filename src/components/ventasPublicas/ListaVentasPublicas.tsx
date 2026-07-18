@@ -215,7 +215,7 @@ export default function ListaVentasPublicas({
           />
           <input
             type="text"
-            placeholder="Filtrar por nombre de rifa..."
+            placeholder="Filtrar por nombre del proyecto..."
             value={filtroRifa}
             onChange={(e) => setFiltroRifa(e.target.value)}
             className="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -346,9 +346,9 @@ export default function ListaVentasPublicas({
                   <p className="text-xs text-slate-600">{venta.cliente_telefono}</p>
                 </div>
 
-                {/* Rifa */}
+                {/* Proyecto */}
                 <div onClick={() => onSelectVenta(venta.id)}>
-                  <p className="text-xs text-slate-500 font-medium mb-1">RIFA</p>
+                  <p className="text-xs text-slate-500 font-medium mb-1">PROYECTO</p>
                   <p className="text-sm text-slate-900">{venta.rifa_nombre}</p>
                   <p className="text-xs text-slate-600">
                     {venta.cantidad_boletas} boleta

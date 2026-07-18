@@ -6,10 +6,10 @@ import { API_BASE_URL } from '@/config/api'
 const POLL_MS = 8000
 
 /**
- * Guard global: cuando el sistema está en pausa (alguna rifa PAUSADA), bloquea
+ * Guard global: cuando el sistema está en pausa (algun proyecto PAUSADA), bloquea
  * por completo la interfaz para los roles ADMIN y VENDEDOR. El SUPER_ADMIN nunca
- * se bloquea (debe poder reactivar la rifa). Consulta el estado periódicamente,
- * por lo que al reactivar la rifa el bloqueo desaparece automáticamente.
+ * se bloquea (debe poder reactivar el proyecto). Consulta el estado periódicamente,
+ * por lo que al reactivar el proyecto el bloqueo desaparece automáticamente.
  */
 export default function PausaGuard({ children }: { children: React.ReactNode }) {
   const [pausado, setPausado] = useState(false)

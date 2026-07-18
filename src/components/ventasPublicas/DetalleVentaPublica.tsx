@@ -664,7 +664,7 @@ export default function DetalleVentaPublica({
         </div>
       </div>
 
-      {/* Información de la Rifa y Boletas */}
+      {/* Información del proyecto y Boletas */}
       <div className="bg-white rounded-lg border border-slate-200 p-6">
         <h3 className="text-sm font-semibold text-slate-900 mb-4">
           🎫 Boletas Seleccionadas
@@ -672,7 +672,7 @@ export default function DetalleVentaPublica({
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-xs text-slate-500 font-medium mb-1">RIFA</p>
+              <p className="text-xs text-slate-500 font-medium mb-1">PROYECTO</p>
               <p className="text-sm font-medium text-slate-900">
                 {venta.rifa_nombre}
               </p>
