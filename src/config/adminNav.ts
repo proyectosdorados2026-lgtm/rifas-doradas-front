@@ -80,6 +80,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     roles: ['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'],
   },
   {
+    href: '/gastos',
+    label: 'Gastos',
+    description: 'Reportar y ver gastos del equipo',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
     href: '/rifas',
     label: 'Proyectos',
     description: 'Crear y configurar proyectos',
