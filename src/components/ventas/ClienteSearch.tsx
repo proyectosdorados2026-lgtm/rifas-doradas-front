@@ -164,7 +164,12 @@ export default function ClienteSearch({
     setError(null)
 
     try {
-      const response = await ventasApi.crearCliente(clienteNuevo)
+      const payload = {
+        ...clienteNuevo,
+        email: clienteNuevo.email?.trim() || undefined,
+        direccion: clienteNuevo.direccion?.trim() || undefined,
+      }
+      const response = await ventasApi.crearCliente(payload)
       const nuevoCliente = response.data?.cliente ?? response.data
       
       console.log('Cliente creado exitosamente:', nuevoCliente)
@@ -581,14 +586,14 @@ export default function ClienteSearch({
             </div>
             <div>
               <label className="block text-sm font-bold text-black mb-2">
-                Email
+                Email <span className="font-normal text-slate-500">(opcional)</span>
               </label>
               <input
                 type="email"
                 value={clienteNuevo.email}
                 onChange={(e) => setClienteNuevo({ ...clienteNuevo, email: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                placeholder="juan@ejemplo.com"
+                placeholder="Opcional"
               />
             </div>
             <div>

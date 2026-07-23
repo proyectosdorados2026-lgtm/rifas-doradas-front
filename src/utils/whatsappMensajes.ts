@@ -4,7 +4,7 @@
 import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
 import { getMediosDePagoTexto } from '@/config/paymentInfo'
 
-export const LINK_CONSULTA_BOLETAS = 'https://elgrancamion.com/boletas'
+export const LINK_CONSULTA_BOLETAS = 'https://sueñosdorados.com.co/mis-boletas'
 
 const fmt = (value: number) =>
   new Intl.NumberFormat('es-CO', {

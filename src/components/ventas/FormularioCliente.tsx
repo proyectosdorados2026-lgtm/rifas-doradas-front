@@ -214,7 +214,7 @@ export default function FormularioCliente({
         {/* Email */}
         <div>
           <label className="block text-sm font-bold text-black mb-2">
-            Email
+            Email <span className="font-normal text-slate-500">(opcional)</span>
           </label>
           <input
             type="email"
@@ -223,7 +223,7 @@ export default function FormularioCliente({
             className={`w-full px-4 py-2 border rounded-lg bg-white text-black focus:ring-2 focus:ring-blue-600 focus:border-blue-400 outline-none placeholder:text-slate-500 ${
               errores.email ? 'border-red-400' : 'border-slate-400'
             }`}
-            placeholder="cliente@email.com"
+            placeholder="Opcional"
           />
           {errores.email && (
             <p className="mt-1 text-xs text-red-600">{errores.email}</p>

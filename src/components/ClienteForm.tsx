@@ -87,9 +87,7 @@ export default function ClienteForm({ cliente, onSubmit, onCancel }: ClienteForm
     if (!formData.telefono.trim()) {
       newErrors.telefono = 'El teléfono es requerido'
     }
-    if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'El email no es válido'
     }
     if (!formData.identificacion.trim()) {
@@ -124,7 +122,11 @@ export default function ClienteForm({ cliente, onSubmit, onCancel }: ClienteForm
 
     setLoading(true)
     try {
-      await onSubmit(formData)
+      await onSubmit({
+        ...formData,
+        email: formData.email.trim() || undefined,
+        direccion: formData.direccion.trim() || undefined,
+      })
     } finally {
       setLoading(false)
     }
@@ -188,7 +190,7 @@ export default function ClienteForm({ cliente, onSubmit, onCancel }: ClienteForm
 
           <div>
             <label htmlFor="email" className="block text-sm font-bold text-black mb-2">
-              Correo Electrónico *
+              Correo Electrónico <span className="font-normal text-slate-500">(opcional)</span>
             </label>
             <input
               type="email"
@@ -199,7 +201,7 @@ export default function ClienteForm({ cliente, onSubmit, onCancel }: ClienteForm
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all duration-200 text-slate-900 placeholder-slate-400 ${
                 errors.email ? 'border-red-300 bg-red-50' : 'border-slate-300 bg-white'
               }`}
-              placeholder="juan.perez@example.com"
+              placeholder="Opcional"
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600">{errors.email}</p>
