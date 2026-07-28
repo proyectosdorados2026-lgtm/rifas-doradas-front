@@ -2,17 +2,49 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { vendedoresStatsApi, VendedorStats, ResumenGlobal } from '@/lib/vendedoresStatsApi'
+import {
+  vendedoresStatsApi,
+  VendedorStats,
+  ResumenGlobal,
+  UsuarioCreado,
+} from '@/lib/vendedoresStatsApi'
 
 const fmtMoney = (n: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n) || 0)
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(Number(n) || 0)
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
 const ROLE_BADGE: Record<string, string> = {
-  SUPER_ADMIN: 'bg-indigo-100 text-indigo-700',
   ADMIN: 'bg-emerald-100 text-emerald-700',
-  VENDEDOR: 'bg-amber-100 text-amber-700'
+  VENDEDOR: 'bg-amber-100 text-amber-700',
+}
+
+type GrupoFiltro = 'TODOS' | 'ADMINS' | 'VENDEDORES'
+
+function sumMetrics(rows: VendedorStats[]): ResumenGlobal {
+  return rows.reduce(
+    (acc, r) => {
+      acc.total_ventas += Number(r.total_ventas) || 0
+      acc.monto_total += Number(r.monto_total) || 0
+      acc.abonado_total += Number(r.abonado_total) || 0
+      acc.saldo_pendiente += Number(r.saldo_pendiente) || 0
+      acc.clientes_unicos += Number(r.clientes_unicos) || 0
+      if (r.activo) acc.vendedores_activos += 1
+      return acc
+    },
+    {
+      total_ventas: 0,
+      monto_total: 0,
+      abonado_total: 0,
+      saldo_pendiente: 0,
+      clientes_unicos: 0,
+      vendedores_activos: 0,
+    }
+  )
 }
 
 export default function VendedoresStatsPage() {
@@ -21,13 +53,21 @@ export default function VendedoresStatsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<VendedorStats[]>([])
-  const [resumen, setResumen] = useState<ResumenGlobal | null>(null)
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
-  const [filtroRol, setFiltroRol] = useState<'TODOS' | 'VENDEDOR' | 'ADMIN' | 'SUPER_ADMIN'>('TODOS')
+  const [grupo, setGrupo] = useState<GrupoFiltro>('TODOS')
+  const [personaId, setPersonaId] = useState<string>('')
   const [search, setSearch] = useState('')
 
-  // Auth: solo SUPER_ADMIN
+  const [showCrear, setShowCrear] = useState(false)
+  const [creando, setCreando] = useState(false)
+  const [crearError, setCrearError] = useState<string | null>(null)
+  const [crearOk, setCrearOk] = useState<UsuarioCreado | null>(null)
+  const [formNombre, setFormNombre] = useState('')
+  const [formPassword, setFormPassword] = useState('')
+  const [formRol, setFormRol] = useState<'ADMIN' | 'VENDEDOR'>('VENDEDOR')
+  const [formEmail, setFormEmail] = useState('')
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
@@ -54,7 +94,6 @@ export default function VendedoresStatsPage() {
     try {
       const res = await vendedoresStatsApi.list(fechaInicio || undefined, fechaFin || undefined)
       setData(res.data)
-      setResumen(res.resumen)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error cargando datos')
     } finally {
@@ -67,16 +106,69 @@ export default function VendedoresStatsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorized])
 
+  const personasDelGrupo = useMemo(() => {
+    if (grupo === 'ADMINS') return data.filter((d) => d.rol === 'ADMIN')
+    if (grupo === 'VENDEDORES') return data.filter((d) => d.rol === 'VENDEDOR')
+    return data
+  }, [data, grupo])
+
+  useEffect(() => {
+    if (personaId && !personasDelGrupo.some((p) => p.id === personaId)) {
+      setPersonaId('')
+    }
+  }, [grupo, personasDelGrupo, personaId])
+
   const filtered = useMemo(() => {
-    return data.filter(d => {
-      if (filtroRol !== 'TODOS' && d.rol !== filtroRol) return false
-      if (search) {
-        const s = search.toLowerCase()
-        if (!d.nombre.toLowerCase().includes(s) && !d.email.toLowerCase().includes(s)) return false
-      }
-      return true
-    })
-  }, [data, filtroRol, search])
+    let rows = data
+
+    if (grupo === 'ADMINS') rows = rows.filter((d) => d.rol === 'ADMIN')
+    if (grupo === 'VENDEDORES') rows = rows.filter((d) => d.rol === 'VENDEDOR')
+
+    if (personaId) rows = rows.filter((d) => d.id === personaId)
+
+    if (search.trim()) {
+      const s = search.toLowerCase()
+      rows = rows.filter(
+        (d) => d.nombre.toLowerCase().includes(s) || d.email.toLowerCase().includes(s)
+      )
+    }
+
+    return rows
+  }, [data, grupo, personaId, search])
+
+  const resumenVista = useMemo(() => sumMetrics(filtered), [filtered])
+
+  const abrirCrear = () => {
+    setCrearError(null)
+    setCrearOk(null)
+    setFormNombre('')
+    setFormPassword('')
+    setFormEmail('')
+    setFormRol(grupo === 'ADMINS' ? 'ADMIN' : 'VENDEDOR')
+    setShowCrear(true)
+  }
+
+  const submitCrear = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreando(true)
+    setCrearError(null)
+    setCrearOk(null)
+    try {
+      const res = await vendedoresStatsApi.crearUsuario({
+        nombre: formNombre.trim(),
+        password: formPassword,
+        rol: formRol,
+        ...(formEmail.trim() ? { email: formEmail.trim() } : {}),
+      })
+      setCrearOk(res.data)
+      setFormPassword('')
+      await load()
+    } catch (err) {
+      setCrearError(err instanceof Error ? err.message : 'No se pudo crear el usuario')
+    } finally {
+      setCreando(false)
+    }
+  }
 
   if (!authorized) {
     return (
@@ -91,7 +183,6 @@ export default function VendedoresStatsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-indigo-50/30">
-      {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
@@ -106,23 +197,29 @@ export default function VendedoresStatsPage() {
                 Dashboard
               </a>
               <span className="text-slate-300">/</span>
-              <h1 className="text-base font-semibold text-slate-800">Vendedores</h1>
+              <h1 className="text-base font-semibold text-slate-800">Equipo</h1>
             </div>
+            <button
+              type="button"
+              onClick={abrirCrear}
+              className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              + Crear usuario
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Filtros */}
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
             <div>
               <label className="text-xs font-medium text-slate-500">Fecha inicio</label>
               <input
                 type="date"
                 value={fechaInicio}
                 max={fechaFin || todayISO()}
-                onChange={e => setFechaInicio(e.target.value)}
+                onChange={(e) => setFechaInicio(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               />
             </div>
@@ -133,21 +230,44 @@ export default function VendedoresStatsPage() {
                 value={fechaFin}
                 min={fechaInicio || undefined}
                 max={todayISO()}
-                onChange={e => setFechaFin(e.target.value)}
+                onChange={(e) => setFechaFin(e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-500">Rol</label>
+              <label className="text-xs font-medium text-slate-500">Grupo</label>
               <select
-                value={filtroRol}
-                onChange={e => setFiltroRol(e.target.value as typeof filtroRol)}
+                value={grupo}
+                onChange={(e) => {
+                  setGrupo(e.target.value as GrupoFiltro)
+                  setPersonaId('')
+                }}
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               >
-                <option value="TODOS">Todos</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="ADMIN">Admin</option>
-                <option value="VENDEDOR">Vendedor</option>
+                <option value="TODOS">Admins + Vendedores</option>
+                <option value="ADMINS">Admins (general)</option>
+                <option value="VENDEDORES">Vendedores (general)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500">Persona</label>
+              <select
+                value={personaId}
+                onChange={(e) => setPersonaId(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              >
+                <option value="">
+                  {grupo === 'ADMINS'
+                    ? 'Todos los admins'
+                    : grupo === 'VENDEDORES'
+                      ? 'Todos los vendedores'
+                      : 'Todos'}
+                </option>
+                {personasDelGrupo.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre} ({p.rol === 'ADMIN' ? 'Admin' : 'Vendedor'})
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -155,7 +275,7 @@ export default function VendedoresStatsPage() {
               <input
                 type="text"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Nombre o email"
                 className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               />
@@ -172,7 +292,8 @@ export default function VendedoresStatsPage() {
                 onClick={() => {
                   setFechaInicio('')
                   setFechaFin('')
-                  setFiltroRol('TODOS')
+                  setGrupo('TODOS')
+                  setPersonaId('')
                   setSearch('')
                   setTimeout(load, 0)
                 }}
@@ -182,7 +303,7 @@ export default function VendedoresStatsPage() {
               </button>
             </div>
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-3">
             <button
               onClick={() => {
                 const t = todayISO()
@@ -222,22 +343,29 @@ export default function VendedoresStatsPage() {
           </div>
         </section>
 
-        {/* Resumen global */}
-        {resumen && (
-          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiCard label="Vendedores activos" value={resumen.vendedores_activos} />
-            <KpiCard label="Ventas" value={resumen.total_ventas} />
-            <KpiCard label="Clientes únicos" value={resumen.clientes_unicos} />
-            <KpiCard label="Monto total" value={fmtMoney(resumen.monto_total)} />
-            <KpiCard label="Abonado" value={fmtMoney(resumen.abonado_total)} highlight="emerald" />
-            <KpiCard label="Saldo pendiente" value={fmtMoney(resumen.saldo_pendiente)} highlight="amber" />
-          </section>
-        )}
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <KpiCard label="Personas en vista" value={filtered.length} />
+          <KpiCard label="Ventas" value={resumenVista.total_ventas} />
+          <KpiCard label="Clientes (suma)" value={resumenVista.clientes_unicos} />
+          <KpiCard label="Monto total" value={fmtMoney(resumenVista.monto_total)} />
+          <KpiCard label="Abonado" value={fmtMoney(resumenVista.abonado_total)} highlight="emerald" />
+          <KpiCard label="Saldo pendiente" value={fmtMoney(resumenVista.saldo_pendiente)} highlight="amber" />
+        </section>
 
-        {/* Tabla */}
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">Equipo ({filtered.length})</h2>
+            <h2 className="text-sm font-semibold text-slate-800">
+              {grupo === 'ADMINS'
+                ? personaId
+                  ? 'Admin individual'
+                  : 'Admins (general)'
+                : grupo === 'VENDEDORES'
+                  ? personaId
+                    ? 'Vendedor individual'
+                    : 'Vendedores (general)'
+                  : 'Equipo'}{' '}
+              ({filtered.length})
+            </h2>
           </div>
 
           {error && (
@@ -270,15 +398,19 @@ export default function VendedoresStatsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(v => (
+                  {filtered.map((v) => (
                     <tr key={v.id} className="border-t border-slate-100 hover:bg-slate-50/60">
                       <td className="px-4 py-2">
                         <div className="font-medium text-slate-800">{v.nombre}</div>
                         <div className="text-xs text-slate-400">{v.email}</div>
                       </td>
                       <td className="px-4 py-2">
-                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${ROLE_BADGE[v.rol] || 'bg-slate-100 text-slate-600'}`}>
-                          {v.rol}
+                        <span
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                            ROLE_BADGE[v.rol] || 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {v.rol === 'ADMIN' ? 'Admin' : 'Vendedor'}
                         </span>
                       </td>
                       <td className="px-4 py-2 text-right text-slate-700">{v.total_ventas}</td>
@@ -287,12 +419,22 @@ export default function VendedoresStatsPage() {
                       <td className="px-4 py-2 text-right text-amber-600">{v.boletas_reservadas}</td>
                       <td className="px-4 py-2 text-right text-blue-600">{v.boletas_abonadas}</td>
                       <td className="px-4 py-2 text-right text-emerald-600">{v.boletas_pagadas}</td>
-                      <td className="px-4 py-2 text-right font-medium text-slate-800">{fmtMoney(v.monto_total)}</td>
-                      <td className="px-4 py-2 text-right text-emerald-600">{fmtMoney(v.abonado_total)}</td>
-                      <td className="px-4 py-2 text-right text-amber-600">{fmtMoney(v.saldo_pendiente)}</td>
+                      <td className="px-4 py-2 text-right font-medium text-slate-800">
+                        {fmtMoney(v.monto_total)}
+                      </td>
+                      <td className="px-4 py-2 text-right text-emerald-600">
+                        {fmtMoney(v.abonado_total)}
+                      </td>
+                      <td className="px-4 py-2 text-right text-amber-600">
+                        {fmtMoney(v.saldo_pendiente)}
+                      </td>
                       <td className="px-4 py-2 text-right">
                         <a
-                          href={`/vendedores/${v.id}${fechaInicio || fechaFin ? `?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}` : ''}`}
+                          href={`/vendedores/${v.id}${
+                            fechaInicio || fechaFin
+                              ? `?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                              : ''
+                          }`}
                           className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
                         >
                           Ver detalle →
@@ -306,15 +448,120 @@ export default function VendedoresStatsPage() {
           )}
         </section>
       </main>
+
+      {showCrear && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-900">Crear usuario</h3>
+              <button
+                type="button"
+                onClick={() => setShowCrear(false)}
+                className="text-slate-400 hover:text-slate-700 text-xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={submitCrear} className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-slate-500">Nombre</label>
+                <input
+                  required
+                  minLength={2}
+                  value={formNombre}
+                  onChange={(e) => setFormNombre(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ej: Admin 6 / Vendedor Sara"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Contraseña</label>
+                <input
+                  required
+                  type="password"
+                  minLength={6}
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Rol</label>
+                <select
+                  value={formRol}
+                  onChange={(e) => setFormRol(e.target.value as 'ADMIN' | 'VENDEDOR')}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="ADMIN">Administrador</option>
+                  <option value="VENDEDOR">Vendedor</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">
+                  Email (opcional — si lo dejas vacío se genera automático)
+                </label>
+                <input
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="nombre@rifas.com"
+                />
+              </div>
+
+              {crearError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                  {crearError}
+                </div>
+              )}
+              {crearOk && (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+                  Creado: <strong>{crearOk.nombre}</strong> · login{' '}
+                  <strong>{crearOk.email}</strong> · rol {crearOk.rol}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowCrear(false)}
+                  className="flex-1 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="submit"
+                  disabled={creando}
+                  className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold"
+                >
+                  {creando ? 'Creando…' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function KpiCard({ label, value, highlight }: { label: string; value: string | number; highlight?: 'emerald' | 'amber' }) {
+function KpiCard({
+  label,
+  value,
+  highlight,
+}: {
+  label: string
+  value: string | number
+  highlight?: 'emerald' | 'amber'
+}) {
   const color =
-    highlight === 'emerald' ? 'text-emerald-600' :
-    highlight === 'amber' ? 'text-amber-600' :
-    'text-slate-800'
+    highlight === 'emerald'
+      ? 'text-emerald-600'
+      : highlight === 'amber'
+        ? 'text-amber-600'
+        : 'text-slate-800'
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-3">
       <div className="text-[11px] uppercase tracking-wide text-slate-400 font-medium">{label}</div>

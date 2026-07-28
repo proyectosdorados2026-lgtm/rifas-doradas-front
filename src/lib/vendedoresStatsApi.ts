@@ -71,6 +71,24 @@ export interface VendedorVentaRow {
   total_boletas: number
 }
 
+export interface VendedorBoletaRow {
+  id: string
+  numero: number
+  numero_principal: number
+  numeros: number[]
+  estado: string
+  created_at: string
+  updated_at: string
+  venta_id: string
+  venta_fecha: string
+  estado_venta: string
+  rifa_id: string
+  rifa_nombre: string
+  cliente_id: string | null
+  cliente_nombre: string | null
+  cliente_telefono: string | null
+}
+
 export interface VendedorDetalleResponse {
   success: boolean
   vendedor: {
@@ -86,6 +104,23 @@ export interface VendedorDetalleResponse {
   resumen: VendedorDetalleResumen
   clientes: VendedorClienteRow[]
   ventas: VendedorVentaRow[]
+  boletas: VendedorBoletaRow[]
+}
+
+export interface CrearUsuarioPayload {
+  nombre: string
+  password: string
+  rol: 'ADMIN' | 'VENDEDOR'
+  email?: string
+}
+
+export interface UsuarioCreado {
+  id: string
+  nombre: string
+  email: string
+  rol: string
+  activo: boolean
+  created_at: string
 }
 
 interface ListResponse {
@@ -98,7 +133,7 @@ function getAuthHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   return {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` })
+    ...(token && { Authorization: `Bearer ${token}` }),
   }
 }
 
@@ -121,7 +156,7 @@ export const vendedoresStatsApi = {
   async list(fechaInicio?: string, fechaFin?: string): Promise<ListResponse> {
     const qs = buildQuery({ fechaInicio, fechaFin })
     const res = await fetch(`${API_BASE_URL}/api/vendedores-stats${qs}`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
     })
     return handleResponse<ListResponse>(res)
   },
@@ -129,8 +164,19 @@ export const vendedoresStatsApi = {
   async detalle(id: string, fechaInicio?: string, fechaFin?: string): Promise<VendedorDetalleResponse> {
     const qs = buildQuery({ fechaInicio, fechaFin })
     const res = await fetch(`${API_BASE_URL}/api/vendedores-stats/${id}${qs}`, {
-      headers: getAuthHeaders()
+      headers: getAuthHeaders(),
     })
     return handleResponse<VendedorDetalleResponse>(res)
-  }
+  },
+
+  async crearUsuario(
+    payload: CrearUsuarioPayload
+  ): Promise<{ success: boolean; data: UsuarioCreado; message?: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/vendedores-stats/usuarios`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
 }

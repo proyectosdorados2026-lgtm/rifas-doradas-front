@@ -20,6 +20,7 @@ export default function ClientesPage() {
   const [filtroActivo, setFiltroActivo] = useState<ClienteFiltroEstado>('todos')
   const [currentSearch, setCurrentSearch] = useState('')
   const [rifaActual, setRifaActual] = useState<{ id: string; nombre: string; estado: string } | null>(null)
+  const [showVendedores, setShowVendedores] = useState(false)
   const [resumenFiltros, setResumenFiltros] = useState<ClienteResumenFiltros>({
     todos: 0,
     con_boletas: 0,
@@ -40,6 +41,13 @@ export default function ClientesPage() {
     if (!token) {
       router.push('/login')
       return
+    }
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}')
+      const rol = String(u.rol || '').toUpperCase()
+      setShowVendedores(rol === 'SUPER_ADMIN' || rol === 'ADMIN')
+    } catch {
+      setShowVendedores(false)
     }
     fetchClientes()
   }, [router])
@@ -209,6 +217,7 @@ export default function ClientesPage() {
             onFilterEstado={handleFilterEstado}
             filtroActivo={filtroActivo}
             loading={loading}
+            showVendedores={showVendedores}
           />
         )}
       </main>

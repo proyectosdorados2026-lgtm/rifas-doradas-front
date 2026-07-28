@@ -31,7 +31,7 @@ export default function VendedorDetallePage({ params }: { params: Promise<{ id: 
   const [data, setData] = useState<VendedorDetalleResponse | null>(null)
   const [fechaInicio, setFechaInicio] = useState(sp.get('fechaInicio') || '')
   const [fechaFin, setFechaFin] = useState(sp.get('fechaFin') || '')
-  const [tab, setTab] = useState<'ventas' | 'clientes'>('ventas')
+  const [tab, setTab] = useState<'ventas' | 'clientes' | 'boletas'>('ventas')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -200,7 +200,7 @@ export default function VendedorDetallePage({ params }: { params: Promise<{ id: 
 
         {/* Tabs */}
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="border-b border-slate-200 flex">
+          <div className="border-b border-slate-200 flex flex-wrap">
             <button
               onClick={() => setTab('ventas')}
               className={`px-4 py-3 text-sm font-medium ${tab === 'ventas' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
@@ -212,6 +212,12 @@ export default function VendedorDetallePage({ params }: { params: Promise<{ id: 
               className={`px-4 py-3 text-sm font-medium ${tab === 'clientes' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
               Clientes ({data?.clientes.length ?? 0})
+            </button>
+            <button
+              onClick={() => setTab('boletas')}
+              className={`px-4 py-3 text-sm font-medium ${tab === 'boletas' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Boletas ({data?.boletas?.length ?? 0})
             </button>
           </div>
 
@@ -261,35 +267,73 @@ export default function VendedorDetallePage({ params }: { params: Promise<{ id: 
                 </table>
               </div>
             )
-          ) : !data?.clientes.length ? (
-            <div className="p-10 text-center text-sm text-slate-400">Sin clientes en el rango</div>
+          ) : tab === 'clientes' ? (
+            !data?.clientes.length ? (
+              <div className="p-10 text-center text-sm text-slate-400">Sin clientes en el rango</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Cliente</th>
+                      <th className="px-4 py-2 text-left">Contacto</th>
+                      <th className="px-4 py-2 text-right">Ventas</th>
+                      <th className="px-4 py-2 text-right">Monto</th>
+                      <th className="px-4 py-2 text-right">Abonado</th>
+                      <th className="px-4 py-2 text-right">Saldo</th>
+                      <th className="px-4 py-2 text-left">Última venta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.clientes.map(c => (
+                      <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/60">
+                        <td className="px-4 py-2 font-medium text-slate-800">{c.nombre}</td>
+                        <td className="px-4 py-2 text-slate-600">
+                          <div>{c.telefono || '—'}</div>
+                          {c.email && <div className="text-xs text-slate-400">{c.email}</div>}
+                        </td>
+                        <td className="px-4 py-2 text-right text-slate-700">{c.total_ventas}</td>
+                        <td className="px-4 py-2 text-right font-medium text-slate-800">{fmtMoney(c.monto_total)}</td>
+                        <td className="px-4 py-2 text-right text-emerald-600">{fmtMoney(c.abonado_total)}</td>
+                        <td className="px-4 py-2 text-right text-amber-600">{fmtMoney(c.saldo_pendiente)}</td>
+                        <td className="px-4 py-2 text-slate-600 whitespace-nowrap">{fmtDate(c.ultima_venta)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : !(data?.boletas?.length) ? (
+            <div className="p-10 text-center text-sm text-slate-400">Sin boletas en el rango</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
                   <tr>
+                    <th className="px-4 py-2 text-left">Número(s)</th>
+                    <th className="px-4 py-2 text-left">Estado</th>
                     <th className="px-4 py-2 text-left">Cliente</th>
-                    <th className="px-4 py-2 text-left">Contacto</th>
-                    <th className="px-4 py-2 text-right">Ventas</th>
-                    <th className="px-4 py-2 text-right">Monto</th>
-                    <th className="px-4 py-2 text-right">Abonado</th>
-                    <th className="px-4 py-2 text-right">Saldo</th>
-                    <th className="px-4 py-2 text-left">Última venta</th>
+                    <th className="px-4 py-2 text-left">Proyecto</th>
+                    <th className="px-4 py-2 text-left">Venta</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.clientes.map(c => (
-                    <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50/60">
-                      <td className="px-4 py-2 font-medium text-slate-800">{c.nombre}</td>
-                      <td className="px-4 py-2 text-slate-600">
-                        <div>{c.telefono || '—'}</div>
-                        {c.email && <div className="text-xs text-slate-400">{c.email}</div>}
+                  {data.boletas.map(b => (
+                    <tr key={b.id} className="border-t border-slate-100 hover:bg-slate-50/60">
+                      <td className="px-4 py-2 font-mono font-medium text-slate-800">
+                        {(b.numeros || [b.numero]).map(n => `#${n}`).join(' · ')}
                       </td>
-                      <td className="px-4 py-2 text-right text-slate-700">{c.total_ventas}</td>
-                      <td className="px-4 py-2 text-right font-medium text-slate-800">{fmtMoney(c.monto_total)}</td>
-                      <td className="px-4 py-2 text-right text-emerald-600">{fmtMoney(c.abonado_total)}</td>
-                      <td className="px-4 py-2 text-right text-amber-600">{fmtMoney(c.saldo_pendiente)}</td>
-                      <td className="px-4 py-2 text-slate-600 whitespace-nowrap">{fmtDate(c.ultima_venta)}</td>
+                      <td className="px-4 py-2">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${ESTADO_BADGE[b.estado] || 'bg-slate-100 text-slate-600'}`}>
+                          {b.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="font-medium text-slate-800">{b.cliente_nombre || '—'}</div>
+                        {b.cliente_telefono && <div className="text-xs text-slate-400">{b.cliente_telefono}</div>}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">{b.rifa_nombre}</td>
+                      <td className="px-4 py-2 text-slate-600 whitespace-nowrap">{fmtDate(b.venta_fecha)}</td>
                     </tr>
                   ))}
                 </tbody>

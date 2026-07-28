@@ -67,18 +67,8 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     description: 'Pagos pendientes por WhatsApp',
     roles: ['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'],
   },
-  {
-    href: '/seguimiento-clientes',
-    label: 'Seguimiento',
-    description: 'Seguimiento de clientes',
-    roles: ['SUPER_ADMIN', 'ADMIN'],
-  },
-  {
-    href: '/preasignaciones',
-    label: 'Preasignaciones',
-    description: 'Boletas preasignadas',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'],
-  },
+  // Ocultos del menú (rutas siguen existiendo):
+  // /seguimiento-clientes, /preasignaciones, /ganadores
   {
     href: '/gastos',
     label: 'Gastos',
@@ -92,15 +82,9 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     roles: ['SUPER_ADMIN'],
   },
   {
-    href: '/ganadores',
-    label: 'Ganadores',
-    description: 'Asignar ganadores',
-    roles: ['SUPER_ADMIN'],
-  },
-  {
     href: '/vendedores',
-    label: 'Vendedores',
-    description: 'Estadísticas de equipo',
+    label: 'Equipo',
+    description: 'Admins, vendedores y altas',
     roles: ['SUPER_ADMIN'],
   },
   {

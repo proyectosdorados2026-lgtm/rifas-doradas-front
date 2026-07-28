@@ -29,6 +29,8 @@ interface ClienteListProps {
   onFilterEstado: (estado: ClienteFiltroEstado) => void
   filtroActivo: ClienteFiltroEstado
   loading: boolean
+  /** Mostrar columna de vendedor(es) — admin/superadmin */
+  showVendedores?: boolean
 }
 
 const formatCurrency = (value: number) => {
@@ -106,6 +108,7 @@ export default function ClienteList({
   onFilterEstado,
   filtroActivo,
   loading,
+  showVendedores = false,
 }: ClienteListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [cargandoRecordatorio, setCargandoRecordatorio] = useState<string | null>(null)
@@ -217,6 +220,9 @@ export default function ClienteList({
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Cliente</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Teléfono</th>
                     <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Identificación</th>
+                    {showVendedores && (
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Vendedor(es)</th>
+                    )}
                     <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Boletas (actual)</th>
                     <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Estado (actual)</th>
                     <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase">Deuda (actual)</th>
@@ -239,6 +245,24 @@ export default function ClienteList({
                       </td>
                       <td className="px-4 py-3 text-sm text-black">{cliente.telefono}</td>
                       <td className="px-4 py-3 text-sm text-black font-mono">{cliente.identificacion}</td>
+                      {showVendedores && (
+                        <td className="px-4 py-3 text-sm text-slate-700">
+                          {(cliente.vendedores || []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {cliente.vendedores!.map((nombre) => (
+                                <span
+                                  key={`${cliente.id}-${nombre}`}
+                                  className="inline-flex px-1.5 py-0.5 text-[11px] font-semibold rounded bg-indigo-50 text-indigo-700"
+                                >
+                                  {nombre}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Sin ventas</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-center">
                         <span className={`text-sm font-black ${(cliente.total_boletas || 0) > 0 ? 'text-black' : 'text-slate-400'}`}>
                           {cliente.total_boletas || 0}
@@ -333,6 +357,11 @@ export default function ClienteList({
                       <div className="min-w-0">
                         <div className="font-bold text-black truncate">{cliente.nombre}</div>
                         <div className="text-xs text-slate-500">{cliente.identificacion} · {cliente.telefono}</div>
+                        {showVendedores && (cliente.vendedores || []).length > 0 && (
+                          <div className="text-[11px] text-indigo-700 mt-0.5">
+                            {(cliente.vendedores || []).join(', ')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <button

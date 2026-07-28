@@ -13,6 +13,8 @@ export interface Cliente {
   boletas_reservadas?: number
   boletas_abonadas?: number
   deuda_total?: number
+  /** Nombres de vendedores/admins con ventas a este cliente (admin/superadmin) */
+  vendedores?: string[]
 }
 
 export interface ClienteCreateRequest {
