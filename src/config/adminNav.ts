@@ -47,7 +47,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: '/boletas-reservadas',
     label: 'Boletas reservadas',
     description: 'Administrar reservas',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
     href: '/boletas/ver',
