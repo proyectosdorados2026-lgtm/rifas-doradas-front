@@ -179,4 +179,16 @@ export const vendedoresStatsApi = {
     })
     return handleResponse(res)
   },
+
+  async actualizarUsuario(
+    id: string,
+    payload: { nombre?: string; email?: string; password?: string }
+  ): Promise<{ success: boolean; data: UsuarioCreado; message?: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/vendedores-stats/usuarios/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
 }

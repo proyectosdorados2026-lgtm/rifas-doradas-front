@@ -68,6 +68,14 @@ export default function VendedoresStatsPage() {
   const [formRol, setFormRol] = useState<'ADMIN' | 'VENDEDOR'>('VENDEDOR')
   const [formEmail, setFormEmail] = useState('')
 
+  const [editUser, setEditUser] = useState<VendedorStats | null>(null)
+  const [editNombre, setEditNombre] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [editando, setEditando] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [editOk, setEditOk] = useState<string | null>(null)
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
@@ -167,6 +175,48 @@ export default function VendedoresStatsPage() {
       setCrearError(err instanceof Error ? err.message : 'No se pudo crear el usuario')
     } finally {
       setCreando(false)
+    }
+  }
+
+  const abrirEditar = (u: VendedorStats) => {
+    setEditUser(u)
+    setEditNombre(u.nombre)
+    setEditEmail(u.email)
+    setEditPassword('')
+    setEditError(null)
+    setEditOk(null)
+  }
+
+  const submitEditar = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editUser) return
+    setEditando(true)
+    setEditError(null)
+    setEditOk(null)
+    try {
+      const payload: { nombre?: string; email?: string; password?: string } = {}
+      if (editNombre.trim() && editNombre.trim() !== editUser.nombre) {
+        payload.nombre = editNombre.trim()
+      }
+      if (editEmail.trim() && editEmail.trim().toLowerCase() !== editUser.email.toLowerCase()) {
+        payload.email = editEmail.trim()
+      }
+      if (editPassword.trim()) {
+        payload.password = editPassword
+      }
+      if (!payload.nombre && !payload.email && !payload.password) {
+        setEditError('Cambia al menos nombre, email o contraseña')
+        return
+      }
+      const res = await vendedoresStatsApi.actualizarUsuario(editUser.id, payload)
+      setEditOk(`Actualizado: ${res.data.email}`)
+      setEditPassword('')
+      setEditUser({ ...editUser, nombre: res.data.nombre, email: res.data.email })
+      await load()
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'No se pudo actualizar')
+    } finally {
+      setEditando(false)
     }
   }
 
@@ -428,7 +478,14 @@ export default function VendedoresStatsPage() {
                       <td className="px-4 py-2 text-right text-amber-600">
                         {fmtMoney(v.saldo_pendiente)}
                       </td>
-                      <td className="px-4 py-2 text-right">
+                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => abrirEditar(v)}
+                          className="text-xs font-medium text-slate-600 hover:text-slate-900 mr-3"
+                        >
+                          Editar
+                        </button>
                         <a
                           href={`/vendedores/${v.id}${
                             fechaInicio || fechaFin
@@ -537,6 +594,90 @@ export default function VendedoresStatsPage() {
                   className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold"
                 >
                   {creando ? 'Creando…' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-900">Editar usuario</h3>
+              <button
+                type="button"
+                onClick={() => setEditUser(null)}
+                className="text-slate-400 hover:text-slate-700 text-xl leading-none"
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={submitEditar} className="p-5 space-y-4">
+              <p className="text-xs text-slate-500">
+                Rol: <span className="font-semibold text-slate-700">{editUser.rol}</span>
+              </p>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Nombre</label>
+                <input
+                  required
+                  minLength={2}
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">Email (correo de login)</label>
+                <input
+                  required
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500">
+                  Nueva contraseña (dejar vacío para no cambiar)
+                </label>
+                <input
+                  type="password"
+                  minLength={6}
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+
+              {editError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                  {editError}
+                </div>
+              )}
+              {editOk && (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+                  {editOk}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditUser(null)}
+                  className="flex-1 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editando}
+                  className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold"
+                >
+                  {editando ? 'Guardando…' : 'Guardar'}
                 </button>
               </div>
             </form>
