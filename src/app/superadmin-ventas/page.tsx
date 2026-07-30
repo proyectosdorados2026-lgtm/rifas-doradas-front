@@ -11,6 +11,7 @@ import {
   type SABoleta,
 } from '@/lib/superadminVentasApi'
 import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
+import { formatAbonoRegistradoPor } from '@/utils/formatAbonoRegistradoPor'
 
 type ConfirmState = {
   title: string
@@ -552,6 +553,9 @@ function AbonoRow({
           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColor(abono.estado)}`}>{abono.estado}</span>
           <span className="font-semibold text-slate-800">{money(abono.monto)}</span>
           <span className="text-xs text-slate-500">{abono.medio_pago_nombre || abono.gateway_pago || '—'}</span>
+          <span className="text-xs text-slate-500">
+            Por: {formatAbonoRegistradoPor(abono.registrado_por_nombre, abono.gateway_pago)}
+          </span>
           {(abono.boleta_numero != null || (abono.boleta_numeros && abono.boleta_numeros.length > 0)) && (
             <span className="text-xs text-slate-400">
               Boleta {formatBoletaNumeros(abono.boleta_numeros, abono.boleta_numero)}

@@ -35,8 +35,11 @@ export interface AbonoHistorial {
   estado: string
   referencia: string | null
   metodo_pago: string
+  gateway_pago?: string | null
   notas: string | null
   fecha: string
+  registrado_por?: string | null
+  registrado_por_nombre?: string | null
 }
 
 export interface BoletaDetail {

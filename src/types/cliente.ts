@@ -123,6 +123,7 @@ export interface AbonoHistorial {
   abono_fecha: string
   gateway_pago: string | null
   medio_pago_nombre: string | null
+  registrado_por_nombre?: string | null
   rifa_nombre: string | null
   boleta_numero: number | null
   boleta_numeros?: number[] | null

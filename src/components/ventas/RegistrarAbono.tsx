@@ -12,6 +12,7 @@ import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
 import { generarWhatsAppChatLink } from '@/utils/telefono'
 import { WHATSAPP_VENTAS_ACTIVO } from '@/config/features'
 import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
+import { formatAbonoRegistradoPor } from '@/utils/formatAbonoRegistradoPor'
 
 interface Props {
   ventaId: string
@@ -841,11 +842,9 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                             <div className="text-slate-600">
                               {abono.metodo_pago}
                             </div>
-                            {abono.registrado_por_nombre && (
-                              <div className="text-slate-700 font-medium mt-0.5">
-                                Por: {abono.registrado_por_nombre}
-                              </div>
-                            )}
+                            <div className="text-slate-700 font-medium mt-0.5">
+                              Por: {formatAbonoRegistradoPor(abono.registrado_por_nombre, abono.metodo_pago)}
+                            </div>
                             {abono.notas && (
                               <div className="text-slate-400 italic mt-0.5 truncate">
                                 {abono.notas}

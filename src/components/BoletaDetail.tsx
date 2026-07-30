@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import BoletaTicket from './BoletaTicket'
 import ResponsiveBoletaWrapper from './ResponsiveBoletaWrapper'
 import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
+import { formatAbonoRegistradoPor } from '@/utils/formatAbonoRegistradoPor'
 import type { BoletaDetail } from '@/types/boleta'
 
 interface BoletaDetailProps {
@@ -301,6 +302,7 @@ export default function BoletaDetail({ boleta, onPrint }: BoletaDetailProps) {
                   <th className="text-right py-2 px-3 text-slate-600 font-medium">Monto</th>
                   <th className="text-left py-2 px-3 text-slate-600 font-medium">Método</th>
                   <th className="text-left py-2 px-3 text-slate-600 font-medium">Estado</th>
+                  <th className="text-left py-2 px-3 text-slate-600 font-medium">Registrado por</th>
                   <th className="text-left py-2 px-3 text-slate-600 font-medium">Notas</th>
                 </tr>
               </thead>
@@ -320,6 +322,9 @@ export default function BoletaDetail({ boleta, onPrint }: BoletaDetailProps) {
                         {abono.estado}
                       </span>
                     </td>
+                    <td className="py-2 px-3 text-slate-700">
+                      {formatAbonoRegistradoPor(abono.registrado_por_nombre, abono.gateway_pago)}
+                    </td>
                     <td className="py-2 px-3 text-slate-500 text-xs max-w-[200px] truncate">{abono.notas || '—'}</td>
                   </tr>
                 ))}
@@ -330,7 +335,7 @@ export default function BoletaDetail({ boleta, onPrint }: BoletaDetailProps) {
                   <td className="py-2 px-3 text-right font-bold text-green-700">
                     {formatCurrency(boleta.abonos.reduce((sum, a) => sum + a.monto, 0))}
                   </td>
-                  <td colSpan={3}></td>
+                  <td colSpan={4}></td>
                 </tr>
               </tfoot>
             </table>
