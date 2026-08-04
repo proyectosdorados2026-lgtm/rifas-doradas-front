@@ -246,17 +246,17 @@ export default function VentasPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+      <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center min-h-14 sm:h-16 py-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="text-slate-600 hover:text-slate-900"
+                className="text-slate-600 hover:text-slate-900 text-sm shrink-0"
               >
-                ← Dashboard
+                ← <span className="hidden sm:inline">Dashboard</span>
               </button>
-              <h1 className="text-xl font-semibold text-slate-900">Sistema de Ventas</h1>
+              <h1 className="text-base sm:text-xl font-semibold text-slate-900 truncate">Ventas</h1>
             </div>
             <ConexionIndicator />
           </div>
@@ -264,7 +264,7 @@ export default function VentasPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-28 sm:pb-8">
         {error ? (
           <div className="text-center py-12">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
@@ -284,34 +284,26 @@ export default function VentasPage() {
         ) : (
           <div className="space-y-8">
             {/* Indicador de paso actual */}
-            <div className="flex items-center justify-center space-x-2 mb-8">
-              <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium ${
-                pasoActual === 'seleccionar-rifa' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-              }`}>
-                <span>1</span>
-                <span>Seleccionar proyecto</span>
-              </div>
-              <div className={`w-8 h-px bg-slate-300`}></div>
-              <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium ${
-                pasoActual === 'seleccionar-boletas' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-              }`}>
-                <span>2</span>
-                <span>Seleccionar Boletas</span>
-              </div>
-              <div className={`w-8 h-px bg-slate-300`}></div>
-              <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium ${
-                pasoActual === 'datos-cliente' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-              }`}>
-                <span>3</span>
-                <span>Datos Cliente</span>
-              </div>
-              <div className={`w-8 h-px bg-slate-300`}></div>
-              <div className={`flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium ${
-                pasoActual === 'resumen' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
-              }`}>
-                <span>4</span>
-                <span>Resumen</span>
-              </div>
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mb-6 sm:mb-8 px-1">
+              {[
+                { key: 'seleccionar-rifa', n: 1, label: 'Proyecto', short: 'Proy.' },
+                { key: 'seleccionar-boletas', n: 2, label: 'Boletas', short: 'Bol.' },
+                { key: 'datos-cliente', n: 3, label: 'Cliente', short: 'Cli.' },
+                { key: 'resumen', n: 4, label: 'Cobrar', short: 'Pago' },
+              ].map((step, i) => (
+                <div key={step.key} className="flex items-center gap-1 sm:gap-2">
+                  {i > 0 && <div className="w-4 sm:w-8 h-px bg-slate-300" />}
+                  <div
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${
+                      pasoActual === step.key ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <span>{step.n}</span>
+                    <span className="hidden sm:inline">{step.label}</span>
+                    <span className="sm:hidden">{step.short}</span>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Sección de Reservas Activas
@@ -365,57 +357,54 @@ export default function VentasPage() {
                   boletasSeleccionadas={boletasSeleccionadas}
                 />
                 
-                {/* Botón para continuar al siguiente paso */}
-                <div className="flex justify-between">
-                  <button
-                    onClick={volverPasoAnterior}
-                    className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
-                  >
-                    ← Volver
-                  </button>
-                  
-                  {boletasSeleccionadas.length > 0 && (
+                {/* Navegación — sticky en móvil */}
+                <div className="fixed bottom-0 left-0 right-0 z-30 sm:static bg-white/95 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-slate-200 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-0 sm:py-0">
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 sm:gap-0 max-w-7xl mx-auto">
                     <button
-                      onClick={() => setPasoActual('datos-cliente')}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                      onClick={volverPasoAnterior}
+                      className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 min-h-[48px]"
                     >
-                      <span>Continuar con Cliente</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
+                      ← Volver
                     </button>
-                  )}
-                  
-                  {boletasSeleccionadas.length === 0 && (
-                    <div className="text-slate-500 text-sm">
-                      Selecciona al menos una boleta para continuar
-                    </div>
-                  )}
+                    
+                    {boletasSeleccionadas.length > 0 ? (
+                      <button
+                        onClick={() => setPasoActual('datos-cliente')}
+                        className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 min-h-[48px] font-medium"
+                      >
+                        <span>Continuar ({boletasSeleccionadas.length} boleta{boletasSeleccionadas.length !== 1 ? 's' : ''})</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <p className="text-slate-500 text-sm text-center sm:text-right py-2">
+                        Selecciona al menos una boleta
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {pasoActual === 'datos-cliente' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6 pb-4">
                 <ClienteSearch
                  rifaId={rifaSeleccionada?.id}
                  onClienteSelected={(clienteSeleccionado) => {
-                 console.log('Cliente seleccionado:', clienteSeleccionado)
                  setCliente(clienteSeleccionado)
-
                  setTimeout(() => {
                  setPasoActual('resumen')
                  }, 0)
                  }}
                 />
                 
-                {/* Botón para volver */}
-                <div className="flex justify-between">
+                <div className="sm:pt-2">
                   <button
                     onClick={volverPasoAnterior}
-                    className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 min-h-[48px]"
                   >
-                    ← Volver a Boletas
+                    ← Volver a boletas
                   </button>
                 </div>
               </div>

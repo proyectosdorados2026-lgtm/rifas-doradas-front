@@ -11,3 +11,9 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Panel interno: no indexar en buscadores
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"

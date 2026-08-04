@@ -1,6 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  UserPlus,
+  UserSearch,
+  IdCard,
+  Search,
+  Phone,
+  Mail,
+  MapPin,
+  Check,
+  AlertCircle,
+  Loader2,
+  ChevronRight,
+  User,
+  Sparkles,
+} from 'lucide-react'
 import { Cliente, ClienteSimilar } from '@/types/ventas'
 import { ventasApi } from '@/lib/ventasApi'
 
@@ -33,7 +48,7 @@ export default function ClienteSearch({
   permitirCrear = true,
   rifaId
 }: ClienteSearchProps) {
-  const [modo, setModo] = useState<'BUSCAR' | 'NUEVO'>('BUSCAR')
+  const [modo, setModo] = useState<'BUSCAR' | 'NUEVO'>(permitirCrear ? 'NUEVO' : 'BUSCAR')
   const [tipoBusqueda, setTipoBusqueda] = useState<'CEDULA' | 'GENERAL'>('CEDULA')
   const [busqueda, setBusqueda] = useState('')
   const [cedulaBusqueda, setCedulaBusqueda] = useState('')
@@ -353,28 +368,36 @@ export default function ClienteSearch({
     )
   }
 
+  const busquedaActiva =
+    tipoBusqueda === 'CEDULA'
+      ? cedulaBusqueda.length >= 7
+      : busqueda.length >= 3
+
+  const mostrarEmptyBusqueda =
+    !loading && resultados.length === 0 && busquedaActiva
+
+  const inputClass =
+    'block w-full pl-10 pr-3 py-3 sm:py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-400 text-base sm:text-sm min-h-[48px]'
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h2 className="text-lg font-bold text-black mb-6">Datos del Cliente</h2>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 pb-28 sm:pb-6">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+          <User className="w-5 h-5 text-blue-600 shrink-0" />
+          Datos del cliente
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          {modo === 'NUEVO'
+            ? 'Registra los datos del comprador para continuar al cobro.'
+            : 'Busca un cliente que ya haya comprado antes.'}
+        </p>
+      </div>
       
-      {/* Tabs para cambiar modo */}
+      {/* Tabs principales — Nuevo primero (mayoría de casos) */}
       {permitirCrear && (
-      <div className="flex space-x-1 mb-6 bg-slate-100 p-1 rounded-lg">
+      <div className="grid grid-cols-2 gap-2 mb-5 sm:mb-6">
         <button
-          onClick={() => {
-            setModo('BUSCAR')
-            setClienteCreadoExitosamente(false) // Resetear estado
-            setError(null)
-          }}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-            modo === 'BUSCAR'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          Cliente Existente
-        </button>
-        <button
+          type="button"
           onClick={() => {
             setModo('NUEVO')
             setClienteCreadoExitosamente(false)
@@ -382,266 +405,315 @@ export default function ClienteSearch({
             setSimilaresOcultos(false)
             setError(null)
           }}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+          className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-3 px-3 rounded-xl text-sm font-semibold transition-all min-h-[56px] border-2 ${
             modo === 'NUEVO'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white'
           }`}
         >
-          Nuevo Cliente
+          <UserPlus className="w-5 h-5 shrink-0" />
+          <span>Nuevo cliente</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setModo('BUSCAR')
+            setClienteCreadoExitosamente(false)
+            setError(null)
+          }}
+          className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-3 sm:py-3 px-3 rounded-xl text-sm font-semibold transition-all min-h-[56px] border-2 ${
+            modo === 'BUSCAR'
+              ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+              : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white'
+          }`}
+        >
+          <UserSearch className="w-5 h-5 shrink-0" />
+          <span>Ya registrado</span>
         </button>
       </div>
       )}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 flex items-start gap-2 text-sm">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
       {clienteCreadoExitosamente && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-            ¡Cliente creado exitosamente! Redirigiendo al resumen...
-          </div>
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl mb-4 flex items-center gap-2 text-sm font-medium">
+          <Check className="w-5 h-5 shrink-0" />
+          ¡Cliente registrado! Continuando al cobro...
         </div>
       )}
 
       {!permitirCrear || modo === 'BUSCAR' ? (
         <div className="space-y-4">
-          {/* Tabs para tipo de búsqueda */}
-          <div className="flex space-x-1 mb-4 bg-slate-50 p-1 rounded-lg">
+          {/* Sub-tabs búsqueda */}
+          <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
               onClick={() => setTipoBusqueda('CEDULA')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
                 tipoBusqueda === 'CEDULA'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Por Cédula
+              <IdCard className="w-4 h-4" />
+              Por cédula
             </button>
             <button
+              type="button"
               onClick={() => setTipoBusqueda('GENERAL')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
                 tipoBusqueda === 'GENERAL'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              General
+              <Search className="w-4 h-4" />
+              Nombre / teléfono
             </button>
           </div>
 
-          {/* Campo de búsqueda por cédula */}
           {tipoBusqueda === 'CEDULA' ? (
             <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Número de Cédula
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Número de cédula
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                  </svg>
-                </div>
+                <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={cedulaBusqueda}
-                  onChange={(e) => setCedulaBusqueda(e.target.value.replace(/\D/g, ''))} // Solo números
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                  placeholder="Ej: 123456789"
+                  onChange={(e) => setCedulaBusqueda(e.target.value.replace(/\D/g, ''))}
+                  className={inputClass}
+                  placeholder="Ej: 1234567890"
                 />
               </div>
+              {!busquedaActiva && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Escribe al menos 7 dígitos para buscar.
+                </p>
+              )}
             </div>
           ) : (
-            /* Campo de búsqueda general */
             <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Buscar por nombre, teléfono o email
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Buscar cliente
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                  placeholder="Escribe al menos 3 caracteres..."
+                  className={inputClass}
+                  placeholder="Nombre, teléfono o email..."
                 />
               </div>
+              {!busquedaActiva && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Escribe al menos 3 caracteres para buscar.
+                </p>
+              )}
             </div>
           )}
 
-          {/* Resultados de búsqueda */}
-          {loading ? (
-            <div className="text-center py-4 text-slate-500">
-              <div className="inline-flex items-center">
-                <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {tipoBusqueda === 'CEDULA' ? 'Buscando por cédula...' : 'Buscando clientes...'}
-              </div>
+          {loading && busquedaActiva ? (
+            <div className="text-center py-8 text-slate-500">
+              <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-600" />
+              <p className="text-sm">Buscando cliente...</p>
             </div>
           ) : resultados.length > 0 ? (
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-black">
-                {resultados.length} cliente{resultados.length !== 1 ? 's' : ''} encontrado{resultados.length !== 1 ? 's' : ''}
-                {tipoBusqueda === 'CEDULA' && ' por cédula'}
+              <h3 className="text-sm font-semibold text-slate-700">
+                {resultados.length} resultado{resultados.length !== 1 ? 's' : ''}
               </h3>
-              <div className="border border-slate-200 rounded-lg divide-y divide-slate-200">
+              <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
                 {resultados.map((cliente) => (
                   <button
                     key={cliente.id}
+                    type="button"
                     onClick={() => seleccionarCliente(cliente)}
-                    className="w-full text-left p-4 hover:bg-slate-50 transition-colors"
+                    className="w-full text-left p-4 hover:bg-blue-50 active:bg-blue-100 transition-colors flex items-center justify-between gap-3 min-h-[64px]"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-slate-900">{cliente.nombre}</div>
-                        <div className="text-sm text-slate-600">{cliente.telefono}</div>
-                        {cliente.email && (
-                          <div className="text-sm text-slate-500">{cliente.email}</div>
-                        )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-900 truncate">{cliente.nombre}</div>
+                      <div className="text-sm text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          {cliente.telefono}
+                        </span>
                         {cliente.identificacion && (
-                          <div className="text-sm text-slate-500">C.C: {cliente.identificacion}</div>
+                          <span className="inline-flex items-center gap-1">
+                            <IdCard className="w-3.5 h-3.5" />
+                            {cliente.identificacion}
+                          </span>
                         )}
-                      </div>
-                      <div className="text-blue-600">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
                       </div>
                     </div>
+                    <ChevronRight className="w-5 h-5 text-blue-600 shrink-0" />
                   </button>
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <svg className="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <p className="text-slate-600">
-                {tipoBusqueda === 'CEDULA' 
-                  ? 'No se encontró cliente con esa cédula'
-                  : 'No se encontraron clientes'
-                }
+          ) : mostrarEmptyBusqueda ? (
+            <div className="text-center py-8 px-2 rounded-xl border border-dashed border-slate-200 bg-slate-50">
+              <UserSearch className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+              <p className="text-slate-700 font-medium">
+                No encontramos ese cliente
               </p>
-              <p className="text-sm text-slate-500 mt-1">
-                {tipoBusqueda === 'CEDULA' 
-                  ? 'Intenta con otro número de cédula o crea un nuevo cliente'
-                  : busqueda.length >= 3 
-                    ? 'Intenta con otra búsqueda o crea un nuevo cliente'
-                    : 'Escribe al menos 3 caracteres para comenzar'
-                }
+              <p className="text-sm text-slate-500 mt-1 max-w-xs mx-auto">
+                Puedes registrarlo como cliente nuevo en un solo paso.
               </p>
+              {permitirCrear && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModo('NUEVO')
+                    if (tipoBusqueda === 'CEDULA' && cedulaBusqueda) {
+                      setClienteNuevo((prev) => ({ ...prev, identificacion: cedulaBusqueda }))
+                    }
+                    setError(null)
+                  }}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold min-h-[44px]"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Crear cliente nuevo
+                </button>
+              )}
             </div>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-            Al escribir el nombre o la cédula, mostraremos clientes similares con su historial de boletas para evitar duplicados.
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex items-start gap-2">
+            <Sparkles className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
+            <span>
+              Completa nombre y teléfono. Si el cliente ya existe, te avisamos antes de duplicarlo.
+            </span>
           </div>
 
-          {/* Formulario de nuevo cliente */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-black mb-2">
-                Nombre completo *
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Nombre completo <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={clienteNuevo.nombre}
-                onChange={(e) => {
-                  setSimilaresOcultos(false)
-                  setClienteNuevo({ ...clienteNuevo, nombre: e.target.value })
-                }}
-                className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                placeholder="Juan Pérez"
-              />
-              <div className="mt-3">
-                {renderPanelSimilares()}
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={clienteNuevo.nombre}
+                  onChange={(e) => {
+                    setSimilaresOcultos(false)
+                    setClienteNuevo({ ...clienteNuevo, nombre: e.target.value })
+                  }}
+                  className={inputClass}
+                  placeholder="Ej: Juan Pérez"
+                  autoFocus
+                />
+              </div>
+              <div className="mt-3">{renderPanelSimilares()}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Teléfono / WhatsApp <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={clienteNuevo.telefono}
+                  onChange={(e) => setClienteNuevo({ ...clienteNuevo, telefono: e.target.value })}
+                  className={inputClass}
+                  placeholder="300 123 4567"
+                />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Teléfono *
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Email <span className="text-slate-400 font-normal">(opcional)</span>
               </label>
-              <input
-                type="tel"
-                value={clienteNuevo.telefono}
-                onChange={(e) => setClienteNuevo({ ...clienteNuevo, telefono: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                placeholder="+57 300 123 4567"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Email <span className="font-normal text-slate-500">(opcional)</span>
-              </label>
-              <input
-                type="email"
-                value={clienteNuevo.email}
-                onChange={(e) => setClienteNuevo({ ...clienteNuevo, email: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                placeholder="Opcional"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-black mb-2">
-                Identificación
-              </label>
-              <div className="flex gap-2">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <input
-                  type="text"
-                  value={clienteNuevo.identificacion}
-                  onChange={(e) => {
-                    setSimilaresOcultos(false)
-                    setClienteNuevo({ ...clienteNuevo, identificacion: e.target.value })
-                  }}
-                  className="flex-1 px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-black placeholder:text-slate-500"
-                  placeholder="123456789"
+                  type="email"
+                  value={clienteNuevo.email}
+                  onChange={(e) => setClienteNuevo({ ...clienteNuevo, email: e.target.value })}
+                  className={inputClass}
+                  placeholder="correo@ejemplo.com"
                 />
+              </div>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Cédula / identificación
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={clienteNuevo.identificacion}
+                    onChange={(e) => {
+                      setSimilaresOcultos(false)
+                      setClienteNuevo({ ...clienteNuevo, identificacion: e.target.value })
+                    }}
+                    className={inputClass}
+                    placeholder="1234567890"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={generarIdentificacion}
                   disabled={generandoId}
-                  className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                  className="px-4 py-3 sm:py-2.5 bg-slate-100 text-slate-800 text-sm font-semibold rounded-xl hover:bg-slate-200 disabled:opacity-50 border border-slate-200 min-h-[48px] whitespace-nowrap"
                 >
-                  {generandoId ? '...' : 'Generar'}
+                  {generandoId ? 'Generando...' : 'Generar ID'}
                 </button>
               </div>
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-black mb-2">
-              Dirección
-            </label>
-            <textarea
-              value={clienteNuevo.direccion}
-              onChange={(e) => setClienteNuevo({ ...clienteNuevo, direccion: e.target.value })}
-              rows={2}
-              className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none bg-white text-black placeholder:text-slate-500"
-              placeholder="Calle 123 #45-67, Bogotá"
-            />
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Dirección <span className="text-slate-400 font-normal">(opcional)</span>
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400 pointer-events-none" />
+                <textarea
+                  value={clienteNuevo.direccion}
+                  onChange={(e) => setClienteNuevo({ ...clienteNuevo, direccion: e.target.value })}
+                  rows={2}
+                  className={`${inputClass} pl-10 min-h-[80px] py-3`}
+                  placeholder="Ciudad, barrio..."
+                />
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={crearCliente}
-            disabled={creando || !clienteNuevo.nombre || !clienteNuevo.telefono}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {creando ? 'Creando cliente...' : 'Crear Nuevo Cliente'}
-          </button>
+          <div className="fixed bottom-0 left-0 right-0 z-30 sm:static bg-white/95 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-slate-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-0 sm:py-0 -mx-4 sm:mx-0">
+            <button
+              type="button"
+              onClick={crearCliente}
+              disabled={creando || !clienteNuevo.nombre.trim() || !clienteNuevo.telefono.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold min-h-[52px] shadow-lg shadow-blue-600/20 sm:shadow-none"
+            >
+              {creando ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Guardando cliente...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5" />
+                  Continuar con este cliente
+                </>
+              )}
+            </button>
+          </div>
         </div>
       )}
 

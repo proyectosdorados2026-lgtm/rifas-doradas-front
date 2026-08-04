@@ -146,9 +146,7 @@ export default function CarritoVentas({
         boletas: boletas.map(b => ({
           id: b.id,
           reserva_token: b.reserva_token,
-          ...(b.numero_principal != null
-            ? { numero_principal: b.numero_principal }
-            : {}),
+          numero_principal: b.numero_principal ?? b.numero,
         })),
         medio_pago_id: medioPagoId,
         total_venta: total,
@@ -188,9 +186,11 @@ export default function CarritoVentas({
         boletas: boletasResp.map((b: any) => {
           const abonoBoleta = tipoVenta === 'ABONO' ? (abonosPorBoleta[b.id] || 0) : precioBoleta
           const saldoB = precioBoleta - abonoBoleta
+          const local = boletas.find((x) => x.id === b.id)
           return {
             numero: b.numero,
             numeros: Array.isArray(b.numeros) ? b.numeros.map(Number) : [Number(b.numero)],
+            numero_principal: b.numero_principal ?? local?.numero_principal ?? b.numero,
             estado: abonoBoleta >= precioBoleta ? 'PAGADA' : abonoBoleta > 0 ? 'ABONADA' : 'PENDIENTE',
             precioBoleta: precioBoleta,
             totalPagado: abonoBoleta,
@@ -452,9 +452,9 @@ export default function CarritoVentas({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-bold text-black">Resumen de Venta</h2>
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6 pb-28 sm:pb-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-bold text-black">Resumen de Venta</h2>
         <div className="text-sm text-slate-600">
           {boletas.length} boleta{boletas.length !== 1 ? 's' : ''}
         </div>
@@ -473,9 +473,9 @@ export default function CarritoVentas({
           {boletas.map((boleta) => (
             <div
               key={boleta.id}
-              className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg"
             >
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 min-w-0">
                 <PrincipalGiftLabel
                   numeros={boleta.numeros}
                   numero={boleta.numero}
@@ -506,11 +506,11 @@ export default function CarritoVentas({
       {/* Tipo de Venta */}
       <div className="mb-6">
         <h3 className="text-sm font-bold text-black mb-3">Tipo de Operación</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           <button
             onClick={() => setTipoVenta('COMPLETA')}
             disabled={procesando}
-            className={`p-4 border-2 rounded-lg transition-all ${
+            className={`p-3 sm:p-4 border-2 rounded-lg transition-all min-h-[72px] ${
               tipoVenta === 'COMPLETA'
                 ? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-300'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-green-300 hover:bg-green-50/50'
@@ -522,7 +522,7 @@ export default function CarritoVentas({
           <button
             onClick={() => setTipoVenta('ABONO')}
             disabled={procesando}
-            className={`p-4 border-2 rounded-lg transition-all ${
+            className={`p-3 sm:p-4 border-2 rounded-lg transition-all min-h-[72px] ${
               tipoVenta === 'ABONO'
                 ? 'border-yellow-500 bg-yellow-50 text-yellow-700 ring-2 ring-yellow-300'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-yellow-300 hover:bg-yellow-50/50'
@@ -534,7 +534,7 @@ export default function CarritoVentas({
           <button
             onClick={() => setTipoVenta('RESERVA')}
             disabled={procesando}
-            className={`p-4 border-2 rounded-lg transition-all ${
+            className={`p-3 sm:p-4 border-2 rounded-lg transition-all min-h-[72px] ${
               tipoVenta === 'RESERVA'
                 ? 'border-red-500 bg-red-50 text-red-700 ring-2 ring-red-300'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-red-300 hover:bg-red-50/50'
@@ -591,9 +591,9 @@ export default function CarritoVentas({
               return (
                 <div
                   key={boleta.id}
-                  className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg"
                 >
-                  <div className="flex-shrink-0 min-w-[5.5rem]">
+                  <div className="flex-shrink-0 min-w-0">
                     <div className="text-sm font-bold text-slate-800 leading-tight">
                       {formatBoletaNumeros(boleta.numeros, boleta.numero)}
                     </div>
@@ -752,13 +752,14 @@ export default function CarritoVentas({
         </div>
       )}
 
-      {/* Botones de acción */}
-      <div className="flex space-x-3">
+      {/* Botones de acción — sticky en móvil */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 sm:static bg-white/95 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none border-t sm:border-0 border-slate-200 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-0 sm:py-0 -mx-4 sm:mx-0">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 max-w-7xl mx-auto">
         {boletas.length > 0 && (
           <button
             onClick={cancelarVenta}
             disabled={procesando}
-            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+            className="w-full sm:flex-1 px-4 py-3 sm:py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 min-h-[48px]"
           >
             Cancelar
           </button>
@@ -768,7 +769,7 @@ export default function CarritoVentas({
           <button
             onClick={() => setMostrarDialogoReserva(true)}
             disabled={procesando || boletas.length === 0 || !cliente.nombre || !cliente.telefono}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            className="w-full sm:flex-1 px-4 py-3 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors min-h-[48px]"
           >
             {procesando ? 'Procesando...' : `📌 Crear Reserva`}
           </button>
@@ -776,7 +777,7 @@ export default function CarritoVentas({
           <button
             onClick={() => setMostrarConfirmacion(true)}
             disabled={!tipoVentaSeleccionado || procesando || boletas.length === 0 || !cliente.nombre || !cliente.telefono || !medioPagoId || (tipoVenta === 'ABONO' && montoAbono <= 0)}
-            className={`flex-1 px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors ${
+            className={`w-full sm:flex-1 px-4 py-3 sm:py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors min-h-[48px] ${
               tipoVenta === 'COMPLETA' 
                 ? 'bg-green-600 hover:bg-green-700' 
                 : tipoVenta === 'ABONO'
@@ -787,15 +788,16 @@ export default function CarritoVentas({
             {procesando 
               ? 'Procesando...' 
               : !tipoVentaSeleccionado
-                ? 'Selecciona tipo de operación'
+                ? 'Elige tipo de operación'
                 : !medioPagoId
-                  ? 'Selecciona método de pago'
+                  ? 'Elige método de pago'
                   : tipoVenta === 'ABONO' 
-                    ? `Crear Abono ($${montoAbono.toLocaleString('es-CO')})`
-                    : `Completar Venta ($${total.toLocaleString('es-CO')})`
+                    ? `Cobrar abono $${montoAbono.toLocaleString('es-CO')}`
+                    : `Cobrar $${total.toLocaleString('es-CO')}`
             }
           </button>
         )}
+        </div>
       </div>
 
       {/* Modal de confirmación */}

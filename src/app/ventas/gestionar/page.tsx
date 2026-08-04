@@ -6,7 +6,7 @@ import ClienteSearch from '@/components/ventas/ClienteSearch'
 import { Cliente } from '@/types/ventas'
 import { ventasApi } from '@/lib/ventasApi'
 import ListaVentasPendientes from '@/components/ventas/ListaVentasPendientes'
-import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
+import { formatBoletaNumeros, sanitizeBoletaSearchDigits } from '@/utils/formatBoletaNumeros'
 
 interface ResultadoBusquedaBoleta {
   boleta_buscada: number
@@ -51,9 +51,10 @@ export default function GestionarAbonosPage() {
   const volverDashboard = () => router.push('/mis-reportes')
 
   const buscarPorBoleta = async () => {
-    const num = parseInt(numeroBoleta.trim())
-    if (isNaN(num) || num <= 0) {
-      setErrorBusqueda('Ingresa un número de boleta válido')
+    const digits = sanitizeBoletaSearchDigits(numeroBoleta.trim())
+    const num = parseInt(digits.replace(/^0+/, '') || digits, 10)
+    if (!digits || isNaN(num) || num <= 0) {
+      setErrorBusqueda('Ingresa un número de boleta válido (cualquiera de los dos del par)')
       return
     }
 
@@ -167,7 +168,7 @@ export default function GestionarAbonosPage() {
               <div className="flex border-b-[1.5px] border-black">
                 <button
                   onClick={() => { setModoBusqueda('boleta'); resetBusqueda() }}
-                  className={`flex-1 px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors ${
+                  className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors min-h-[48px] ${
                     modoBusqueda === 'boleta'
                       ? 'bg-[var(--primary)] text-black'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)]'
@@ -177,7 +178,7 @@ export default function GestionarAbonosPage() {
                 </button>
                 <button
                   onClick={() => { setModoBusqueda('cliente'); resetBusqueda() }}
-                  className={`flex-1 px-6 py-4 text-xs font-bold uppercase tracking-wider transition-colors border-l-[1.5px] border-black ${
+                  className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors border-l-[1.5px] border-black min-h-[48px] ${
                     modoBusqueda === 'cliente'
                       ? 'bg-[var(--primary)] text-black'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)]'
@@ -187,29 +188,31 @@ export default function GestionarAbonosPage() {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {modoBusqueda === 'boleta' && (
                   <div className="space-y-4">
                     <p className="text-sm text-slate-600">
                       Ingresa cualquier número de la boleta (en doble oportunidad, cualquiera de los dos del par).
                     </p>
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                      <div className="relative flex-1 w-full">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">#</span>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={numeroBoleta}
-                          onChange={(e) => setNumeroBoleta(e.target.value)}
+                          onChange={(e) => setNumeroBoleta(sanitizeBoletaSearchDigits(e.target.value))}
                           onKeyDown={(e) => e.key === 'Enter' && buscarPorBoleta()}
-                          placeholder="Ej: 42"
-                          min={1}
-                          className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white text-black text-lg font-semibold"
+                          placeholder="Ej: 2738 o 5545"
+                          maxLength={4}
+                          className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white text-black text-lg font-semibold min-h-[48px]"
                         />
                       </div>
                       <button
                         onClick={buscarPorBoleta}
                         disabled={buscando || !numeroBoleta.trim()}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium whitespace-nowrap"
+                        className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium whitespace-nowrap min-h-[48px]"
                       >
                         {buscando ? 'Buscando...' : '🔍 Buscar'}
                       </button>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { API_BASE_URL } from '@/config/api'
+import InstalarAppButton from '@/components/pwa/InstalarAppButton'
 
 interface LoginFormData {
   email: string
@@ -240,6 +241,8 @@ export default function LoginPage() {
                 {isLoading ? 'Entrando…' : 'Entrar'}
               </button>
             </form>
+
+            <InstalarAppButton />
           </div>
         </div>
       </div>

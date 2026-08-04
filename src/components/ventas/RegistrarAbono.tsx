@@ -12,6 +12,7 @@ import { downloadBoletaImage } from '@/utils/downloadBoletaImage'
 import { generarWhatsAppChatLink } from '@/utils/telefono'
 import { WHATSAPP_VENTAS_ACTIVO } from '@/config/features'
 import { formatBoletaNumeros } from '@/utils/formatBoletaNumeros'
+import PrincipalGiftLabel from '@/components/ventas/PrincipalGiftLabel'
 import { formatAbonoRegistradoPor } from '@/utils/formatAbonoRegistradoPor'
 
 interface Props {
@@ -55,6 +56,7 @@ interface BoletaVenta {
   id: string
   numero: number
   numeros?: number[]
+  numero_principal?: number | null
   estado: string
   bloqueo_hasta?: string | null
   precio_boleta?: number
@@ -712,8 +714,13 @@ export default function RegistrarAbono({ ventaId, onBack, onAbonoRegistrado }: P
                 key={boleta.id}
                 className="border-2 border-slate-200 rounded-xl p-4 text-center hover:border-slate-300 transition-colors bg-slate-50/50 flex flex-col gap-2"
               >
-                <div className="text-lg sm:text-xl font-bold text-slate-800 font-mono leading-tight">
-                  {formatBoletaNumeros(boleta.numeros, boleta.numero)}
+                <div className="text-sm sm:text-base font-bold text-slate-800 leading-tight">
+                  <PrincipalGiftLabel
+                    numeros={boleta.numeros}
+                    numero={boleta.numero}
+                    numeroPrincipal={boleta.numero_principal}
+                    compact
+                  />
                 </div>
 
                 <span className="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold

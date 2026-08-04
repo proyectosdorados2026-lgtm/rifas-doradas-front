@@ -1,0 +1,3 @@
+# Panel interno — no indexar en buscadores
+User-agent: *
+Disallow: /

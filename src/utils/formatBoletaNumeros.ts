@@ -22,7 +22,10 @@ export function sanitizeBoletaSearchDigits(term: string, maxDigits = 4): string 
 
 /**
  * Calidad del match para ordenar resultados (menor = mejor).
- * 0 = exacto, 1 = empieza igual, 2 = contiene, Infinity = no coincide.
+ * 0 = exacto, 1 = prefijo (1–3 cifras), Infinity = no coincide.
+ *
+ * Con 4 cifras (ej. 0001) solo hay match exacto sobre el número de boleta,
+ * nunca por subcadena suelta (evita que "0001" → "1" coincida con #8119).
  */
 export function scoreBoletaSearchMatch(
   numeros: number[] | null | undefined,
@@ -31,32 +34,27 @@ export function scoreBoletaSearchMatch(
 ): number {
   const raw = sanitizeBoletaSearchDigits(term)
   if (!raw) return 0
-  const list =
-    Array.isArray(numeros) && numeros.length > 0
-      ? numeros
-      : fallbackNumero != null
-        ? [fallbackNumero]
-        : []
-  const terminoLimpio = raw.replace(/^0+/, '') || '0'
-  const termNum = Number(terminoLimpio)
+  const list = normalizeNumeros(numeros, fallbackNumero)
+  if (list.length === 0) return Infinity
+
+  const termNum = Number(raw.replace(/^0+/, '') || '0')
 
   let best = Infinity
   for (const n of list) {
     const num = Number(n)
-    const numStr = String(num)
-    const padded = numStr.padStart(4, '0')
-    const rawPadded = raw.padStart(4, '0')
+    const padded = String(num).padStart(4, '0')
 
-    if (num === termNum || numStr === raw || padded === raw || padded === rawPadded) {
+    if (raw.length === 4) {
+      if (padded === raw || num === termNum) {
+        best = Math.min(best, 0)
+      }
+      continue
+    }
+
+    if (num === termNum || String(num) === raw || padded === raw.padStart(4, '0')) {
       best = Math.min(best, 0)
-    } else if (padded.startsWith(raw) || padded.startsWith(rawPadded) || numStr.startsWith(terminoLimpio)) {
+    } else if (padded.startsWith(raw)) {
       best = Math.min(best, 1)
-    } else if (
-      numStr.includes(terminoLimpio) ||
-      padded.includes(raw) ||
-      padded.includes(terminoLimpio)
-    ) {
-      best = Math.min(best, 2)
     }
   }
   return best

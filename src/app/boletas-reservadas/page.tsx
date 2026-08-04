@@ -3,6 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ventasPublicasApi } from '@/lib/ventasPublicasApi'
+import {
+  formatBoletaNumeros,
+  searchMatchesNumeros,
+  isExactBoletaNumberMatch,
+  sanitizeBoletaSearchDigits,
+} from '@/utils/formatBoletaNumeros'
 
 interface BoletaReservada {
   boleta_id: string
@@ -114,25 +120,39 @@ export default function BoletasReservadasPage() {
   // Obtener rifas únicas para el filtro
   const rifasUnicas = Array.from(new Set(boletas.map(b => b.rifa_nombre))).sort()
 
-  const formatNumeroBoleta = (numero: number, numeros?: number[]) => {
-    if (Array.isArray(numeros) && numeros.length > 0) {
-      return numeros.map((n) => String(n).padStart(4, '0')).join(' · ')
+  const formatNumeroBoleta = (numero: number, numeros?: number[]) =>
+    formatBoletaNumeros(numeros, numero)
+
+  const normalizeNumeros = (b: BoletaReservada): number[] => {
+    const raw = b.numeros
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map(Number)
     }
-    return String(numero).padStart(4, '0')
+    return [Number(b.numero)]
   }
 
-  // Filtrar boletas
+  // Filtrar boletas — 4 cifras = exacto; 1–3 = prefijo; cualquier número del par
   const boletasFiltradas = boletas.filter(b => {
-    const term = searchTerm.trim().toLowerCase()
-    const numeroTerm = term.replace(/^#/, '')
+    const term = searchTerm.trim()
+    const digitTerm = sanitizeBoletaSearchDigits(term)
+    const textLower = term.toLowerCase()
+    const numeros = normalizeNumeros(b)
+
+    const matchNumero =
+      digitTerm.length === 4
+        ? isExactBoletaNumberMatch(numeros, digitTerm, b.numero)
+        : digitTerm.length > 0
+          ? searchMatchesNumeros(numeros, digitTerm, b.numero)
+          : false
 
     const matchSearch =
       !term ||
-      formatNumeroBoleta(b.numero).includes(numeroTerm) ||
-      b.numero.toString() === numeroTerm ||
-      (b.cliente_nombre && b.cliente_nombre.toLowerCase().includes(term)) ||
-      (b.cliente_telefono && b.cliente_telefono.includes(term)) ||
-      (b.cliente_identificacion && b.cliente_identificacion.includes(term))
+      matchNumero ||
+      (digitTerm.length === 0 &&
+        textLower.length > 0 &&
+        ((b.cliente_nombre && b.cliente_nombre.toLowerCase().includes(textLower)) ||
+          (b.cliente_telefono && b.cliente_telefono.includes(term)) ||
+          (b.cliente_identificacion && b.cliente_identificacion.includes(term))))
 
     const matchOrigen = filtroOrigen === 'TODOS' || b.origen === filtroOrigen
     const matchRifa = filtroRifa === 'TODAS' || b.rifa_nombre === filtroRifa
@@ -248,10 +268,11 @@ export default function BoletasReservadasPage() {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Buscar por número, cliente, teléfono..."
+                  inputMode="search"
+                  placeholder="Buscar 0001, 2738, cliente o teléfono..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px]"
                 />
               </div>
             </div>
@@ -328,7 +349,7 @@ export default function BoletasReservadasPage() {
                       {/* Número de boleta */}
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-mono font-semibold text-sm">
-                          #{formatNumeroBoleta(boleta.numero, (boleta as any).numeros)}
+                          #{formatNumeroBoleta(boleta.numero, boleta.numeros)}
                         </span>
                       </td>
 
@@ -414,7 +435,7 @@ export default function BoletasReservadasPage() {
                             onClick={() => setConfirmDialog({
                               tipo: 'boleta',
                               id: boleta.boleta_id,
-                              mensaje: `¿Liberar la boleta #${formatNumeroBoleta(boleta.numero, (boleta as any).numeros)}? Quedará disponible para la venta nuevamente.`
+                              mensaje: `¿Liberar la boleta #${formatNumeroBoleta(boleta.numero, boleta.numeros)}? Quedará disponible para la venta nuevamente.`
                             })}
                             disabled={liberando === boleta.boleta_id}
                             className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

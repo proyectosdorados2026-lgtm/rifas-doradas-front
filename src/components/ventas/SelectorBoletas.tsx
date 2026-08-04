@@ -382,6 +382,34 @@ if (interval) {
       )
   )
 
+  const boletaSeleccionadaPorBusqueda = busqueda
+    ? boletasSeleccionadas.find((b) =>
+        isExactBoletaNumberMatch(b.numeros, busqueda, b.numero)
+      )
+    : null
+
+  const boletaBuscadaEsPropia = Boolean(
+    boletaSeleccionadaPorBusqueda ||
+      (boletaBuscada &&
+        boletasSeleccionadas.some((b) => b.id === boletaBuscada.id))
+  )
+
+  const boletaEnCarrito =
+    boletaSeleccionadaPorBusqueda ||
+    (boletaBuscada
+      ? boletasSeleccionadas.find((b) => b.id === boletaBuscada.id)
+      : null) ||
+    null
+
+  const mostrarNoDisponible =
+    Boolean(
+      busqueda &&
+        boletaBuscada &&
+        !boletaBuscada.disponible &&
+        !exactaDisponible &&
+        !boletaBuscadaEsPropia
+    )
+
   // Consultar estado de la boleta exacta si no está en disponibles
   useEffect(() => {
     const term = sanitizeBoletaSearchDigits(busqueda)
@@ -407,6 +435,15 @@ if (interval) {
       isExactBoletaNumberMatch((boleta as any).numeros, term, boleta.numero)
     )
     if (enDisponibles) {
+      setBoletaBuscada(null)
+      setBuscandoExacta(false)
+      return
+    }
+
+    const enSeleccion = boletasSeleccionadas.some((b) =>
+      isExactBoletaNumberMatch(b.numeros, term, b.numero)
+    )
+    if (enSeleccion) {
       setBoletaBuscada(null)
       setBuscandoExacta(false)
       return
@@ -445,7 +482,7 @@ if (interval) {
         busquedaExactaTimerRef.current = null
       }
     }
-  }, [busqueda, boletasDisponibles, rifaId])
+  }, [busqueda, boletasDisponibles, boletasSeleccionadas, rifaId])
 
   // Reset página al cambiar búsqueda
   useEffect(() => {
@@ -519,32 +556,32 @@ useEffect(() => {
   }, [cargarBoletasDisponibles])
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-slate-900">Seleccionar Boletas Disponibles</h2>
-        <div className="flex items-center space-x-3">
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
+        <h2 className="text-base sm:text-lg font-medium text-slate-900">Seleccionar Boletas Disponibles</h2>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="text-sm text-slate-600">
             <span className="font-medium">{boletasDisponibles?.length || 0}</span> disponibles
           </div>
-          {/* Botón ruleta */}
           <button
             onClick={abrirRuleta}
             disabled={boletasParaRuleta.length === 0 || loading}
             title="Elegir boleta al azar"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
+            className="inline-flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
               bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700
-              text-white shadow-md shadow-violet-500/30 transition-all hover:scale-105
-              disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              text-white shadow-md shadow-violet-500/30 transition-all
+              disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <span className="text-base">🎰</span>
-            Boleta al Azar
+            <span className="sm:hidden">Al azar</span>
+            <span className="hidden sm:inline">Boleta al Azar</span>
           </button>
           <button
             onClick={() => cargarBoletasDisponibles()}
             disabled={loading}
-            className="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded hover:bg-slate-200 disabled:opacity-50"
+            className="px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 disabled:opacity-50 min-h-[40px]"
           >
-            {loading ? 'Actualizando...' : 'Actualizar'}
+            {loading ? '...' : 'Actualizar'}
           </button>
         </div>
       </div>
@@ -570,22 +607,92 @@ useEffect(() => {
         />
         {busqueda && (
           <p className="mt-1.5 text-xs text-slate-500">
-            {exactaDisponible
-              ? 'Mostrando la boleta exacta.'
-              : boletaBuscada && !boletaBuscada.disponible
-                ? 'Esa boleta ya no está disponible. Abajo verás números parecidos disponibles.'
-                : 'Buscando coincidencia exacta o números parecidos...'}
+            {boletaEnCarrito
+              ? '✓ Este número ya está en tu selección.'
+              : exactaDisponible
+                ? 'Disponible — elígela abajo para agregarla.'
+                : mostrarNoDisponible
+                  ? 'Ocupada por otro cliente. Abajo verás números parecidos disponibles.'
+                  : buscandoExacta
+                    ? 'Consultando estado del número...'
+                    : 'Buscando coincidencia exacta o números parecidos...'}
           </p>
         )}
       </div>
 
-      {/* Resultado exacto no disponible */}
-      {busqueda && boletaBuscada && !boletaBuscada.disponible && !exactaDisponible && (
+      {/* Boletas Seleccionadas — primero para evitar confusión al buscar */}
+      {boletasSeleccionadas.length > 0 && (
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-sm font-medium text-blue-900 mb-3">
+            Tu selección ({boletasSeleccionadas.length})
+          </h3>
+          {feedbackPrincipal && (
+            <div className="mb-3 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
+              ✓ Agregaste: {feedbackPrincipal}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+            {boletasSeleccionadas.map((boleta) => {
+              const esBuscada =
+                busqueda &&
+                isExactBoletaNumberMatch(boleta.numeros, busqueda, boleta.numero)
+              return (
+              <div
+                key={boleta.id}
+                className={`bg-white border rounded-lg p-3 flex items-start justify-between gap-2 ${
+                  esBuscada ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-blue-300'
+                }`}
+              >
+                <div className="min-w-0">
+                  <PrincipalGiftLabel
+                    numeros={(boleta as any).numeros}
+                    numero={boleta.numero}
+                    numeroPrincipal={boleta.numero_principal}
+                  />
+                  <div className="mt-2 text-xs text-blue-700">
+                    Reservada hasta {new Date(boleta.bloqueo_hasta).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  {esBuscada && (
+                    <div className="mt-1 text-[11px] font-semibold text-emerald-700">
+                      ✓ Número buscado
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => removerBoleta(boleta)}
+                  className="shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg text-xl leading-none"
+                  aria-label="Quitar boleta"
+                >
+                  ×
+                </button>
+              </div>
+            )})}
+          </div>
+        </div>
+      )}
+
+      {/* Ya en tu selección (al buscar un número que acabas de elegir) */}
+      {busqueda && boletaEnCarrito && (
+        <div className="mb-4 rounded-lg border-2 border-emerald-400 bg-emerald-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+            ✓ En tu selección
+          </p>
+          <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
+            {formatBoletaNumeros(boletaEnCarrito.numeros, boletaEnCarrito.numero)}
+          </p>
+          <p className="mt-1 text-sm text-emerald-900">
+            Este par ya lo tienes apartado. Puedes seguir buscando más números o continuar con el cliente.
+          </p>
+        </div>
+      )}
+
+      {/* Resultado exacto no disponible (solo si NO es tuya) */}
+      {mostrarNoDisponible && boletaBuscada && (
         <div className="mb-4 rounded-lg border-2 border-amber-400 bg-amber-50 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-                Boleta encontrada · no disponible
+                Ocupada por otro cliente
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
                 {formatBoletaNumeros(boletaBuscada.numeros, boletaBuscada.numero)}
@@ -604,54 +711,14 @@ useEffect(() => {
               )}
             </div>
             <span className="rounded-full bg-amber-200 px-3 py-1 text-xs font-bold uppercase text-amber-900">
-              Primero en resultados
+              No disponible
             </span>
           </div>
         </div>
       )}
 
-      {busqueda && buscandoExacta && !exactaDisponible && !boletaBuscada && (
+      {busqueda && buscandoExacta && !exactaDisponible && !boletaBuscada && !boletaEnCarrito && (
         <div className="mb-4 text-sm text-slate-500">Consultando estado del número...</div>
-      )}
-
-      {/* Boletas Seleccionadas */}
-      {boletasSeleccionadas.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-sm font-medium text-blue-900 mb-3">
-            Boletas Seleccionadas ({boletasSeleccionadas.length})
-          </h3>
-          {feedbackPrincipal && (
-            <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 animate-pulse">
-              ✓ Seleccionaste: {feedbackPrincipal}
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {boletasSeleccionadas.map((boleta) => (
-              <div
-                key={boleta.id}
-                className="bg-white border border-blue-300 rounded-lg p-3 flex items-start justify-between gap-2"
-              >
-                <div className="min-w-0">
-                  <PrincipalGiftLabel
-                    numeros={(boleta as any).numeros}
-                    numero={boleta.numero}
-                    numeroPrincipal={boleta.numero_principal}
-                  />
-                  <div className="mt-2 text-xs text-blue-700">
-                    Bloqueada hasta: {new Date(boleta.bloqueo_hasta).toLocaleTimeString()}
-                  </div>
-                </div>
-                <button
-                  onClick={() => removerBoleta(boleta)}
-                  className="shrink-0 text-red-500 hover:text-red-700 text-xl leading-none"
-                  aria-label="Quitar boleta"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* Lista de Boletas Disponibles */}
@@ -666,25 +733,29 @@ useEffect(() => {
           <p className="text-slate-600">Cargando boletas disponibles...</p>
         </div>
       ) : boletasPagina.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-6 sm:py-8">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-100 rounded-full mb-4">
             <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-slate-900 mb-2">
-            {busqueda && boletaBuscada && !boletaBuscada.disponible
-              ? 'Sin números parecidos disponibles'
-              : busqueda
-                ? 'No se encontraron boletas'
-                : 'No hay boletas disponibles'}
+          <h3 className="text-base sm:text-lg font-medium text-slate-900 mb-2">
+            {boletaEnCarrito
+              ? 'Número en tu selección'
+              : mostrarNoDisponible
+                ? 'Sin números parecidos disponibles'
+                : busqueda
+                  ? 'No se encontraron boletas'
+                  : 'No hay boletas disponibles'}
           </h3>
-          <p className="text-slate-600 mb-4 max-w-md mx-auto">
-            {busqueda && boletaBuscada && !boletaBuscada.disponible
-              ? `El número ${formatBoletaNumeros(boletaBuscada.numeros, boletaBuscada.numero)} ya no está disponible y no hay similares libres ahora.`
-              : busqueda
-                ? `No hay boletas que coincidan con "${busqueda}". Intenta con otro número.`
-                : 'Todas las boletas de este proyecto pueden estar vendidas o reservadas. Intenta más tarde o contacta al administrador.'}
+          <p className="text-sm text-slate-600 mb-4 max-w-md mx-auto px-2">
+            {boletaEnCarrito
+              ? 'Ya tienes este par apartado. Busca otro número o continúa con el cliente.'
+              : mostrarNoDisponible && boletaBuscada
+                ? `El número ${formatBoletaNumeros(boletaBuscada.numeros, boletaBuscada.numero)} está ocupado y no hay similares libres ahora.`
+                : busqueda
+                  ? `No hay boletas que coincidan con "${busqueda}". Intenta con otro número.`
+                  : 'Todas las boletas pueden estar vendidas o reservadas. Intenta más tarde.'}
           </p>
           {busqueda && (
             <button
@@ -697,14 +768,14 @@ useEffect(() => {
         </div>
       ) : (
         <>
-          {busqueda && !exactaDisponible && boletasPagina.length > 0 && (
+          {busqueda && !exactaDisponible && boletasPagina.length > 0 && !boletaEnCarrito && (
             <p className="mb-3 text-sm font-medium text-slate-700">
-              {boletaBuscada && !boletaBuscada.disponible
+              {mostrarNoDisponible
                 ? 'Números parecidos disponibles'
-                : 'Resultados parecidos (la exacta no está libre)'}
+                : 'Resultados parecidos'}
             </p>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
           {boletasPagina.map((boleta) => {
             const nums = normalizeNumeros((boleta as any).numeros, boleta.numero)
             const dual = nums.length > 1
