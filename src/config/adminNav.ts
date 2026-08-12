@@ -88,6 +88,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     roles: ['SUPER_ADMIN'],
   },
   {
+    href: '/inventario-vendedores',
+    label: 'Inventario vendedores',
+    description: 'Boletas asignadas a cada vendedor',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
     href: '/historial',
     label: 'Historial',
     description: 'Movimientos del sistema',

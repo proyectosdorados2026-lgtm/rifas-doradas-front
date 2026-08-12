@@ -74,6 +74,7 @@ class VentasApiService {
       const expectedCodes = new Set([
         'BOLETA_ALREADY_BLOCKED',
         'BOLETA_ALREADY_SOLD',
+        'BOLETA_FUERA_DE_INVENTARIO',
         'SISTEMA_EN_PAUSA',
       ])
       const isExpected =
