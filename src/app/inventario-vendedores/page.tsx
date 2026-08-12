@@ -335,13 +335,19 @@ export default function InventarioVendedoresPage() {
   }
 
   const confirmarFlag = (activar: boolean) => {
-    const sinStock = soloVendedores.every((v) => v.asignadas_libres === 0)
+    const sinStock = soloVendedores.filter((v) => v.asignadas_libres === 0)
     setConfirm({
       title: activar ? 'Activar inventario por vendedor' : 'Desactivar inventario por vendedor',
       message: activar
         ? `A partir de ahora, en "${resumen?.rifa.nombre}" cada vendedor solo podrá vender las boletas que tenga asignadas. Los administradores venderán del pool sin asignar y la web tampoco ofrecerá las asignadas. Las ventas ya en curso siguen igual.${
-            sinStock
-              ? ' ATENCIÓN: ningún vendedor tiene boletas libres asignadas todavía, así que no podrán vender nada nuevo.'
+            sinStock.length > 0
+              ? ` ATENCIÓN: ${
+                  sinStock.length === soloVendedores.length
+                    ? 'ningún vendedor tiene'
+                    : `${sinStock.length} vendedor(es) no tienen`
+                } boletas libres asignadas todavía y no podrán vender nada nuevo: ${sinStock
+                  .map((v) => v.nombre)
+                  .join(', ')}.`
               : ''
           }`
         : `Se volverá al funcionamiento anterior: todos podrán vender cualquier boleta disponible. Las asignaciones quedan guardadas pero se ignoran.`,
