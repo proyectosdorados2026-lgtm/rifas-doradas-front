@@ -9,7 +9,13 @@ export interface ClienteInfo {
 export interface VendedorInfo {
   id: string
   nombre: string
-  email: string
+  email?: string
+}
+
+export interface InventarioInfo {
+  id: string
+  nombre: string
+  serie?: number | null
 }
 
 export interface Boleta {
@@ -21,6 +27,7 @@ export interface Boleta {
   barcode: string | null
   cliente_info: ClienteInfo | null
   vendedor_info: VendedorInfo | null
+  inventario_info?: InventarioInfo | null
   tiene_cliente: boolean
   tipo_estado: 'DISPONIBLE' | 'RESERVADA' | 'CON_PAGO' | 'TRANSFERIDA' | 'ANULADA'
   bloqueo_hasta?: string | null

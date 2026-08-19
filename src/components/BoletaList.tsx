@@ -795,6 +795,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Cliente</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contacto</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">ID / Cédula</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Asignada a</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vendedor</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nota</th>
                 {/* <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">QR</th> */}
@@ -804,7 +805,7 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
             <tbody className="divide-y divide-slate-100">
               {paginatedBoletas.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-16 text-center text-slate-500">
+                  <td colSpan={11} className="px-6 py-16 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">
                       <svg className="w-12 h-12 text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <p className="text-base">{searchTerm ? 'No hay resultados para tu búsqueda.' : 'Aún no hay boletas en este proyecto.'}</p>
@@ -842,6 +843,22 @@ export default function BoletaList({ boletas, loading, rifaInfo }: BoletaListPro
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-slate-600">{boleta.cliente_info?.identificacion || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {boleta.inventario_info?.nombre ? (
+                          <div>
+                            <div className="text-sm font-medium text-indigo-900">
+                              {boleta.inventario_info.nombre}
+                            </div>
+                            {boleta.inventario_info.serie != null && (
+                              <div className="text-[10px] text-indigo-600/80 font-semibold uppercase tracking-wide">
+                                Serie {boleta.inventario_info.serie}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400 italic">Sin asignar</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-slate-600">{boleta.vendedor_info?.nombre || '-'}</div>
