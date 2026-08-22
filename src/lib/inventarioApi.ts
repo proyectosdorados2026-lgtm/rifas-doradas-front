@@ -105,6 +105,38 @@ export interface QuitarResultado {
   boleta_ids: string[]
 }
 
+export type SolicitudBoletaResultado =
+  | 'ASIGNADA'
+  | 'OTRO_VENDEDOR'
+  | 'CON_CLIENTE'
+  | 'NO_DISPONIBLE'
+  | 'NO_ENCONTRADA'
+  | 'BLOQUEADA'
+  | 'YA_TUYA'
+  | 'INVENTARIO_INACTIVO'
+  | 'NO_ASIGNABLE'
+
+export interface SolicitudBoletaResponse {
+  resultado: SolicitudBoletaResultado
+  mensaje: string
+  numero_solicitado?: number
+  asignada?: boolean
+  boleta?: {
+    boleta_id: string
+    numero: number
+    numeros: number[]
+    par: string
+    estado: string
+    bloqueo_vigente: boolean
+    cliente_id: string | null
+    cliente_nombre: string | null
+    inventario_vendedor_id: string | null
+    inventario_de: string | null
+  }
+  vendedor?: { id: string; nombre: string }
+  rifa?: { id: string; nombre: string }
+}
+
 class InventarioApi {
   private getAuthHeaders() {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -164,6 +196,19 @@ class InventarioApi {
       headers: this.getAuthHeaders(),
     })
     return this.handle<InventarioDetalle>(res)
+  }
+
+  async solicitarBoleta(rifaId: string, numero: number): Promise<SolicitudBoletaResponse> {
+    const res = await this.fetchWithTimeout(
+      `${BASE}/rifa/${rifaId}/solicitar-boleta`,
+      {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ numero }),
+      },
+      30000
+    )
+    return this.handle<SolicitudBoletaResponse>(res)
   }
 
   async asignar(rifaId: string, payload: AsignarPayload): Promise<AsignarResultado> {

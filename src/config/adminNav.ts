@@ -67,6 +67,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     description: 'Pagos pendientes por WhatsApp',
     roles: ['SUPER_ADMIN', 'ADMIN', 'VENDEDOR'],
   },
+  {
+    href: '/solicitud-boletas',
+    label: 'Solicitud de boletas',
+    description: 'Pide una boleta para tu inventario',
+    roles: ['VENDEDOR'],
+  },
   // Ocultos del menú (rutas siguen existiendo):
   // /seguimiento-clientes, /preasignaciones, /ganadores
   {
