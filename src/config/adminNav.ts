@@ -73,8 +73,14 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     description: 'Pide una boleta para tu inventario',
     roles: ['VENDEDOR'],
   },
+  {
+    href: '/ganadores',
+    label: 'Ganadores',
+    description: 'Asignar boletas ganadoras',
+    roles: ['SUPER_ADMIN'],
+  },
   // Ocultos del menú (rutas siguen existiendo):
-  // /seguimiento-clientes, /preasignaciones, /ganadores
+  // /seguimiento-clientes, /preasignaciones
   {
     href: '/gastos',
     label: 'Gastos',
