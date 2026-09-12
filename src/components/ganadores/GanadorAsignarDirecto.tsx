@@ -23,6 +23,17 @@ interface UsuarioOption {
   rol: string
 }
 
+interface VendedorInventario {
+  id: string
+  nombre: string
+  serie: number | null
+}
+
+interface InfoBoletaVerificada {
+  numeros: number[]
+  vendedorInventario: VendedorInventario | null
+}
+
 const MEDIOS_PAGO = [
   { id: 'd397d917-c0d0-4c61-b2b3-2ebfab7deeb7', nombre: 'Efectivo' },
   { id: 'af6e15fc-c52c-4491-abe1-20243af301c4', nombre: 'Nequi' },
@@ -54,6 +65,7 @@ export default function GanadorAsignarDirecto() {
   const [medioPagoId, setMedioPagoId] = useState(MEDIOS_PAGO[0].id)
   const [alertaBoleta, setAlertaBoleta] = useState<string | null>(null)
   const [boletaDisponible, setBoletaDisponible] = useState<boolean | null>(null)
+  const [infoBoleta, setInfoBoleta] = useState<InfoBoletaVerificada | null>(null)
   const [validando, setValidando] = useState(false)
   const [asignando, setAsignando] = useState(false)
   const [error, setError] = useState('')
@@ -110,11 +122,13 @@ export default function GanadorAsignarDirecto() {
     if (!rifaId || Number.isNaN(num) || num < 0) {
       setAlertaBoleta(null)
       setBoletaDisponible(null)
+      setInfoBoleta(null)
       return
     }
     setValidando(true)
     setAlertaBoleta(null)
     setBoletaDisponible(null)
+    setInfoBoleta(null)
     try {
       const data = await apiRequest(
         `/ventas/ganadores/buscar-boleta?numero=${num}&rifa_id=${rifaId}`
@@ -125,6 +139,14 @@ export default function GanadorAsignarDirecto() {
         setBoletaDisponible(false)
         return
       }
+
+      const numeros: number[] = Array.isArray(result.boleta?.numeros)
+        ? result.boleta.numeros.map(Number)
+        : result.boleta?.numero != null
+          ? [Number(result.boleta.numero)]
+          : []
+      const vendedorInventario: VendedorInventario | null = result.boleta?.vendedor_inventario || null
+      setInfoBoleta({ numeros, vendedorInventario })
       if (result.disponible) {
         setBoletaDisponible(true)
         setAlertaBoleta(null)
@@ -155,7 +177,21 @@ export default function GanadorAsignarDirecto() {
     setFechaVenta(toDatetimeLocalValue(new Date()))
     setAlertaBoleta(null)
     setBoletaDisponible(null)
+    setInfoBoleta(null)
     setMedioPagoId(MEDIOS_PAGO[0].id)
+  }
+
+  const formatNumero = (n: number) => String(n).padStart(4, '0')
+
+  const textoInventario = () => {
+    if (!infoBoleta) return null
+    if (infoBoleta.vendedorInventario) {
+      const { nombre, serie } = infoBoleta.vendedorInventario
+      return serie != null
+        ? `Inventario de ${nombre} (serie ${serie})`
+        : `Inventario de ${nombre}`
+    }
+    return 'Sin vendedor en inventario (pool libre)'
   }
 
   const asignarDirecto = async () => {
@@ -237,7 +273,7 @@ export default function GanadorAsignarDirecto() {
             <label className="block text-xs font-medium text-slate-500 mb-1">Proyecto *</label>
             <select
               value={rifaId}
-              onChange={(e) => { setRifaId(e.target.value); setBoletaDisponible(null); setAlertaBoleta(null) }}
+              onChange={(e) => { setRifaId(e.target.value); setBoletaDisponible(null); setAlertaBoleta(null); setInfoBoleta(null) }}
               className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
             >
               {rifas.map((r) => (
@@ -253,7 +289,7 @@ export default function GanadorAsignarDirecto() {
                 min={0}
                 max={9999}
                 value={numeroBoleta}
-                onChange={(e) => { setNumeroBoleta(e.target.value); setBoletaDisponible(null); setAlertaBoleta(null) }}
+                onChange={(e) => { setNumeroBoleta(e.target.value); setBoletaDisponible(null); setAlertaBoleta(null); setInfoBoleta(null) }}
                 onBlur={validarBoleta}
                 placeholder="Ej: 3128"
                 className="flex-1 px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
@@ -276,9 +312,25 @@ export default function GanadorAsignarDirecto() {
           </div>
         )}
 
-        {boletaDisponible === true && (
-          <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl text-sm font-medium">
-            ✅ Boleta DISPONIBLE — precio: ${precioBoleta.toLocaleString('es-CO')} (quedará PAGADA)
+        {infoBoleta && (
+          <div className={`mb-4 px-4 py-3 rounded-xl text-sm border ${
+            boletaDisponible === true
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-slate-50 border-slate-200 text-slate-700'
+          }`}>
+            {infoBoleta.numeros.length > 1 && (
+              <p className="font-medium mb-1">
+                Números del par: {infoBoleta.numeros.map(formatNumero).join(' / ')}
+              </p>
+            )}
+            <p className={boletaDisponible === true ? 'font-medium' : ''}>
+              📦 {textoInventario()}
+            </p>
+            {boletaDisponible === true && (
+              <p className="mt-1 font-medium">
+                ✅ Boleta DISPONIBLE — precio: ${precioBoleta.toLocaleString('es-CO')} (quedará PAGADA)
+              </p>
+            )}
           </div>
         )}
 
